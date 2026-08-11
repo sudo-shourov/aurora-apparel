@@ -10,13 +10,13 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Direct cloud client initialization
+// Initialize Turso client dynamically using environment variables
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN
 });
 
-// Auto-create database table lazily
+// Lazy DB initialization helper
 let tableInitialized = false;
 async function ensureDB() {
   if (tableInitialized) return;
@@ -32,11 +32,11 @@ async function ensureDB() {
     `);
     tableInitialized = true;
   } catch (err) {
-    console.error('Database initialization failed:', err);
+    console.error('Database initialization error:', err);
   }
 }
 
-// Middleware to guarantee DB is initialized on requests
+// Middleware ensuring DB initialization on incoming API requests
 app.use(async (req, res, next) => {
   await ensureDB();
   next();
