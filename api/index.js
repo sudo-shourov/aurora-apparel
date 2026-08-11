@@ -1,6 +1,5 @@
 const express = require('express');
-// Import the pure HTTP driver to avoid native binary errors on Vercel
-const { createClient } = require('@libsql/client/http');
+const { createClient } = require('@libsql/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -11,36 +10,30 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Initialize HTTP client
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN
-});
+// Helper function to get database client dynamically
+function getDb() {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
 
-// Lazy DB initialization helper
-let tableInitialized = false;
-async function ensureDB() {
-  if (tableInitialized) return;
-  try {
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    tableInitialized = true;
-  } catch (err) {
-    console.error('Database initialization error:', err);
+  if (!url || !authToken) {
+    throw new Error('TURSO_DATABASE_URL or TURSO_AUTH_TOKEN environment variable is missing.');
   }
+
+  return createClient({ url, authToken });
 }
 
-app.use(async (req, res, next) => {
-  await ensureDB();
-  next();
-});
+// Auto-create users table on request
+async function ensureTableExists(db) {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
 
 // Password Validation Helper
 const validatePassword = (password) => {
@@ -63,14 +56,18 @@ app.post('/api/signup', async (req, res) => {
 
   if (!validatePassword(password)) {
     return res.status(400).json({
-      error: 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.'
+      error: 'Password rules not met.'
     });
   }
 
   try {
+    const db = getDb();
+    await ensureTableExists(db);
+
     const cleanUsername = username.trim().toLowerCase();
     const cleanEmail = email.trim().toLowerCase();
 
+    // Check existing user
     const existingUser = await db.execute({
       sql: 'SELECT id FROM users WHERE username = ? OR email = ?',
       args: [cleanUsername, cleanEmail]
@@ -87,8 +84,11 @@ app.post('/api/signup', async (req, res) => {
       args: [cleanUsername, cleanEmail, hashedPassword]
     });
 
+    // Safely extract insert ID (convert BigInt to Number/String)
+    const userId = result.lastInsertRowid ? String(result.lastInsertRowid) : cleanUsername;
+
     const token = jwt.sign(
-      { id: Number(result.lastInsertRowid), username: cleanUsername },
+      { id: userId, username: cleanUsername },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -99,8 +99,10 @@ app.post('/api/signup', async (req, res) => {
       username: cleanUsername
     });
   } catch (error) {
-    console.error('Signup error:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error('Signup error details:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Internal server error.' 
+    });
   }
 });
 
@@ -113,6 +115,9 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
+    const db = getDb();
+    await ensureTableExists(db);
+
     const cleanUser = username.trim().toLowerCase();
     const result = await db.execute({
       sql: 'SELECT * FROM users WHERE username = ? OR email = ?',
@@ -131,7 +136,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: Number(user.id), username: String(user.username) },
+      { id: String(user.id), username: String(user.username) },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -142,8 +147,10 @@ app.post('/api/login', async (req, res) => {
       username: String(user.username)
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error('Login error details:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Internal server error.' 
+    });
   }
 });
 
