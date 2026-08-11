@@ -88,6 +88,10 @@ body {
   box-shadow: var(--glass-shadow);
 }
 
+.auth-form.hidden {
+  display: none !important;
+}
+
 /* Navigation */
 .navbar {
   position: sticky;
