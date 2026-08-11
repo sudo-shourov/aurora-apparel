@@ -1,8 +1,8 @@
 const express = require('express');
-const { createClient } = require('@libsql/client/web');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const { createClient } = require('@libsql/client/http');
 
 const app = express();
 app.use(cors());
@@ -10,7 +10,7 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Initialize web client (uses standard HTTPS requests instead of native RPC migration calls)
+// Initialize Turso HTTP client
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN
