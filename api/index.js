@@ -10,14 +10,16 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Initialize Turso Cloud SQLite Database Connection
+// Direct cloud client initialization
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || 'file:local.db',
+  url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN
 });
 
-// Auto-create database table on startup
-async function initDB() {
+// Auto-create database table lazily
+let tableInitialized = false;
+async function ensureDB() {
+  if (tableInitialized) return;
   try {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
@@ -28,11 +30,17 @@ async function initDB() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    tableInitialized = true;
   } catch (err) {
     console.error('Database initialization failed:', err);
   }
 }
-initDB();
+
+// Middleware to guarantee DB is initialized on requests
+app.use(async (req, res, next) => {
+  await ensureDB();
+  next();
+});
 
 // Password Validation Helper
 const validatePassword = (password) => {
@@ -63,7 +71,6 @@ app.post('/api/signup', async (req, res) => {
     const cleanUsername = username.trim().toLowerCase();
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check existing user
     const existingUser = await db.execute({
       sql: 'SELECT id FROM users WHERE username = ? OR email = ?',
       args: [cleanUsername, cleanEmail]
@@ -140,5 +147,4 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Export Express app for Vercel Serverless Function
 module.exports = app;
