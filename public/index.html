@@ -157,3 +157,24 @@
   <script src="app.js"></script>
 </body>
 </html>
+
+<!-- Verification Form (Hidden by default) -->
+<form id="verify-form" style="display: none;">
+  <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">
+    We sent a 6-digit verification code to <span id="verify-email-display" style="color: #e2b857; font-weight: bold;"></span>.
+  </p>
+
+  <div class="form-group">
+    <label for="verify-code">Enter 6-Digit Code</label>
+    <input 
+      type="text" 
+      id="verify-code" 
+      placeholder="123456" 
+      maxlength="6" 
+      required 
+      style="letter-spacing: 4px; text-align: center; font-size: 1.2rem;"
+    />
+  </div>
+
+  <button type="submit" class="submit-btn">Verify Account</button>
+</form>

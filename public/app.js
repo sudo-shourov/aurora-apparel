@@ -2,42 +2,65 @@ let currentUser = localStorage.getItem('aura_username') || null;
 
 document.addEventListener('DOMContentLoaded', () => {
   updateUserUI();
+
+  // Attach submit listeners dynamically
+  const signupForm = document.getElementById('signupForm') || document.getElementById('signup-form');
+  const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
+  const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
+
+  if (signupForm) signupForm.addEventListener('submit', handleSignup);
+  if (loginForm) loginForm.addEventListener('submit', handleLogin);
+  if (verifyForm) verifyForm.addEventListener('submit', handleVerifyCode);
 });
 
 function openAuthModal(mode) {
-  document.getElementById('authModal').classList.add('active');
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.add('active');
   switchTab(mode);
 }
 
 function closeAuthModal() {
-  document.getElementById('authModal').classList.remove('active');
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('active');
   clearAlert();
 }
 
 function switchTab(tab) {
   clearAlert();
+  const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
+  const signupForm = document.getElementById('signupForm') || document.getElementById('signup-form');
+  const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
+  const loginTab = document.getElementById('loginTab');
+  const signupTab = document.getElementById('signupTab');
+
+  if (verifyForm) verifyForm.style.display = 'none';
+
   if (tab === 'login') {
-    document.getElementById('loginForm').classList.remove('hidden');
-    document.getElementById('signupForm').classList.add('hidden');
-    document.getElementById('loginTab').classList.add('active');
-    document.getElementById('signupTab').classList.remove('active');
+    if (loginForm) { loginForm.classList.remove('hidden'); loginForm.style.display = 'block'; }
+    if (signupForm) { signupForm.classList.add('hidden'); signupForm.style.display = 'none'; }
+    if (loginTab) loginTab.classList.add('active');
+    if (signupTab) signupTab.classList.remove('active');
   } else {
-    document.getElementById('signupForm').classList.remove('hidden');
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('signupTab').classList.add('active');
-    document.getElementById('loginTab').classList.remove('active');
+    if (signupForm) { signupForm.classList.remove('hidden'); signupForm.style.display = 'block'; }
+    if (loginForm) { loginForm.classList.add('hidden'); loginForm.style.display = 'none'; }
+    if (signupTab) signupTab.classList.add('active');
+    if (loginTab) loginTab.classList.remove('active');
   }
 }
 
 function showAlert(message, type) {
   const alertBox = document.getElementById('alertBox');
-  alertBox.textContent = message;
-  alertBox.className = `alert-box ${type}`;
+  if (alertBox) {
+    alertBox.textContent = message;
+    alertBox.className = `alert-box ${type}`;
+  } else {
+    alert(message);
+  }
 }
 
 function clearAlert() {
   const alertBox = document.getElementById('alertBox');
-  alertBox.className = 'alert-box hidden';
+  if (alertBox) alertBox.className = 'alert-box hidden';
 }
 
 /* Password Strength Evaluator */
@@ -61,39 +84,44 @@ function assessPasswordStrength(password) {
   const strengthLabel = document.getElementById('strengthLabel');
   const signupBtn = document.getElementById('signupBtn');
 
-  const percentage = (passedCount / 5) * 100;
-  strengthBar.style.width = `${percentage}%`;
+  if (strengthBar) {
+    const percentage = (passedCount / 5) * 100;
+    strengthBar.style.width = `${percentage}%`;
 
-  if (passedCount <= 2) {
-    strengthBar.style.backgroundColor = '#ff4757';
-    strengthLabel.textContent = 'Weak Password';
-  } else if (passedCount <= 4) {
-    strengthBar.style.backgroundColor = '#ffa502';
-    strengthLabel.textContent = 'Medium Password';
-  } else {
-    strengthBar.style.backgroundColor = '#2ed573';
-    strengthLabel.textContent = 'Strong Password';
+    if (passedCount <= 2) {
+      strengthBar.style.backgroundColor = '#ff4757';
+      if (strengthLabel) strengthLabel.textContent = 'Weak Password';
+    } else if (passedCount <= 4) {
+      strengthBar.style.backgroundColor = '#ffa502';
+      if (strengthLabel) strengthLabel.textContent = 'Medium Password';
+    } else {
+      strengthBar.style.backgroundColor = '#2ed573';
+      if (strengthLabel) strengthLabel.textContent = 'Strong Password';
+    }
   }
 
-  // Enable button only when all rules are met
-  signupBtn.disabled = passedCount !== 5;
+  if (signupBtn) signupBtn.disabled = passedCount !== 5;
 }
 
 function updateRuleUI(elementId, isValid) {
   const el = document.getElementById(elementId);
-  if (isValid) {
-    el.classList.add('valid');
-  } else {
-    el.classList.remove('valid');
+  if (el) {
+    if (isValid) el.classList.add('valid');
+    else el.classList.remove('valid');
   }
 }
 
-/* Auth Submissions */
+/* 1. Handle Signup */
 async function handleSignup(e) {
   e.preventDefault();
-  const username = document.getElementById('signupUsername').value;
-  const email = document.getElementById('signupEmail').value;
-  const password = document.getElementById('signupPassword').value;
+  
+  const usernameInput = document.getElementById('signupUsername') || document.getElementById('signup-username');
+  const emailInput = document.getElementById('signupEmail') || document.getElementById('signup-email');
+  const passwordInput = document.getElementById('signupPassword') || document.getElementById('signup-password');
+
+  const username = usernameInput.value;
+  const email = emailInput.value;
+  const password = passwordInput.value;
 
   try {
     const res = await fetch('/api/signup', {
@@ -103,23 +131,63 @@ async function handleSignup(e) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(data.error || 'Signup failed');
 
-    localStorage.setItem('aura_token', data.token);
-    localStorage.setItem('aura_username', data.username);
-    currentUser = data.username;
-    
-    updateUserUI();
-    closeAuthModal();
+    // Switch to Verification View
+    const signupForm = document.getElementById('signupForm') || document.getElementById('signup-form');
+    const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
+    const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
+    const emailDisplay = document.getElementById('verify-email-display') || document.getElementById('verifyEmailDisplay');
+
+    if (signupForm) signupForm.style.display = 'none';
+    if (loginForm) loginForm.style.display = 'none';
+
+    if (verifyForm) {
+      verifyForm.style.display = 'block';
+      verifyForm.dataset.email = email;
+    }
+
+    if (emailDisplay) emailDisplay.innerText = email;
+
+    showAlert('Verification code sent! Please check your email.', 'success');
   } catch (err) {
     showAlert(err.message, 'error');
   }
 }
 
+/* 2. Handle 6-Digit Code Verification */
+async function handleVerifyCode(e) {
+  e.preventDefault();
+  const verifyForm = e.target;
+  const email = verifyForm.dataset.email;
+  const codeInput = document.getElementById('verifyCode') || document.getElementById('verify-code');
+  const code = codeInput.value;
+
+  try {
+    const res = await fetch('/api/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+    showAlert('Account verified successfully! Please sign in.', 'success');
+    switchTab('login');
+  } catch (err) {
+    showAlert(err.message, 'error');
+  }
+}
+
+/* 3. Handle Login */
 async function handleLogin(e) {
   e.preventDefault();
-  const username = document.getElementById('loginUsername').value;
-  const password = document.getElementById('loginPassword').value;
+  const usernameInput = document.getElementById('loginUsername') || document.getElementById('login-username');
+  const passwordInput = document.getElementById('loginPassword') || document.getElementById('login-password');
+
+  const username = usernameInput.value;
+  const password = passwordInput.value;
 
   try {
     const res = await fetch('/api/login', {
@@ -129,7 +197,23 @@ async function handleLogin(e) {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    
+    // If backend reports email is unverified, show verify form
+    if (res.status === 403 && data.requiresVerification) {
+      const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
+      const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
+      const emailDisplay = document.getElementById('verify-email-display') || document.getElementById('verifyEmailDisplay');
+
+      if (loginForm) loginForm.style.display = 'none';
+      if (verifyForm) {
+        verifyForm.style.display = 'block';
+        verifyForm.dataset.email = data.email;
+      }
+      if (emailDisplay) emailDisplay.innerText = data.email;
+      throw new Error(data.error);
+    }
+
+    if (!res.ok) throw new Error(data.error || 'Login failed');
 
     localStorage.setItem('aura_token', data.token);
     localStorage.setItem('aura_username', data.username);
@@ -151,6 +235,8 @@ function handleLogout() {
 
 function updateUserUI() {
   const authStatus = document.getElementById('authStatus');
+  if (!authStatus) return;
+
   if (currentUser) {
     authStatus.innerHTML = `
       <span style="margin-right: 12px;">Welcome, <strong>${currentUser}</strong></span>
