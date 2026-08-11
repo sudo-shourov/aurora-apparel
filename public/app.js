@@ -33,7 +33,11 @@ function switchTab(tab) {
   const loginTab = document.getElementById('loginTab');
   const signupTab = document.getElementById('signupTab');
 
-  if (verifyForm) verifyForm.style.display = 'none';
+  // Hide verification form when changing tabs
+  if (verifyForm) {
+    verifyForm.classList.add('hidden');
+    verifyForm.style.display = 'none';
+  }
 
   if (tab === 'login') {
     if (loginForm) { loginForm.classList.remove('hidden'); loginForm.style.display = 'block'; }
@@ -133,16 +137,19 @@ async function handleSignup(e) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Signup failed');
 
-    // Switch to Verification View
+    // Select forms
     const signupForm = document.getElementById('signupForm') || document.getElementById('signup-form');
     const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
     const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
-    const emailDisplay = document.getElementById('verify-email-display') || document.getElementById('verifyEmailDisplay');
+    const emailDisplay = document.getElementById('verifyEmailDisplay') || document.getElementById('verify-email-display');
 
-    if (signupForm) signupForm.style.display = 'none';
-    if (loginForm) loginForm.style.display = 'none';
+    // Hide Signup and Login forms
+    if (signupForm) { signupForm.classList.add('hidden'); signupForm.style.display = 'none'; }
+    if (loginForm) { loginForm.classList.add('hidden'); loginForm.style.display = 'none'; }
 
+    // Display Verification Form (remove .hidden so CSS !important doesn't block display)
     if (verifyForm) {
+      verifyForm.classList.remove('hidden');
       verifyForm.style.display = 'block';
       verifyForm.dataset.email = email;
     }
@@ -202,10 +209,11 @@ async function handleLogin(e) {
     if (res.status === 403 && data.requiresVerification) {
       const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
       const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
-      const emailDisplay = document.getElementById('verify-email-display') || document.getElementById('verifyEmailDisplay');
+      const emailDisplay = document.getElementById('verifyEmailDisplay') || document.getElementById('verify-email-display');
 
-      if (loginForm) loginForm.style.display = 'none';
+      if (loginForm) { loginForm.classList.add('hidden'); loginForm.style.display = 'none'; }
       if (verifyForm) {
+        verifyForm.classList.remove('hidden');
         verifyForm.style.display = 'block';
         verifyForm.dataset.email = data.email;
       }
