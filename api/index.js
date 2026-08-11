@@ -2,12 +2,14 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const { Resend } = require('resend');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Direct HTTP SQL Executor for Turso
 async function executeSql(sql, args = []) {
@@ -78,19 +80,31 @@ async function executeSql(sql, args = []) {
   };
 }
 
-// Ensure table exists on request
+// Ensure table exists (creates is_verified & verification_code columns)
 let tableInitialized = false;
 async function ensureTableExists() {
   if (tableInitialized) return;
+
   await executeSql(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
+      is_verified INTEGER DEFAULT 0,
+      verification_code TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Migration step: Add columns to existing database if created without them
+  try {
+    await executeSql('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;');
+  } catch (err) { /* column already exists */ }
+  try {
+    await executeSql('ALTER TABLE users ADD COLUMN verification_code TEXT;');
+  } catch (err) { /* column already exists */ }
+
   tableInitialized = true;
 }
 
@@ -105,7 +119,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route
+// Sign Up Route (Creates unverified user & sends email)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -133,27 +147,70 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate a 6-digit random code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const result = await executeSql(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-      [cleanUsername, cleanEmail, hashedPassword]
+    await executeSql(
+      'INSERT INTO users (username, email, password, is_verified, verification_code) VALUES (?, ?, ?, 0, ?)',
+      [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    const userId = result.lastInsertRowid ? String(result.lastInsertRowid) : cleanUsername;
-
-    const token = jwt.sign(
-      { id: userId, username: cleanUsername },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    // Send code via Resend
+    await resend.emails.send({
+      from: 'Aurora Apparel <onboarding@resend.dev>',
+      to: cleanEmail,
+      subject: 'Verify your Aurora Apparel Account',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
+          <p>Your 6-digit verification code is:</p>
+          <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
+          <p>Please enter this code on the website to verify your account.</p>
+        </div>
+      `
+    });
 
     return res.status(201).json({
-      message: 'Account created successfully!',
-      token,
-      username: cleanUsername
+      message: 'Account created! Please check your email for your 6-digit verification code.',
+      email: cleanEmail,
+      requiresVerification: true
     });
   } catch (error) {
     console.error('Signup error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error.' });
+  }
+});
+
+// Verification Route (Checks 6-digit code)
+app.post('/api/verify', async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and verification code are required.' });
+  }
+
+  try {
+    await ensureTableExists();
+    const cleanEmail = email.trim().toLowerCase();
+
+    const result = await executeSql(
+      'SELECT * FROM users WHERE email = ? AND verification_code = ?',
+      [cleanEmail, code.trim()]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired verification code.' });
+    }
+
+    // Mark as verified and remove code
+    await executeSql(
+      'UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?',
+      [cleanEmail]
+    );
+
+    return res.json({ message: 'Account verified successfully! You can now log in.' });
+  } catch (error) {
+    console.error('Verify error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error.' });
   }
 });
@@ -180,6 +237,16 @@ app.post('/api/login', async (req, res) => {
     }
 
     const user = result.rows[0];
+
+    // Check if account is verified
+    if (user.is_verified === 0 || user.is_verified === '0') {
+      return res.status(403).json({
+        error: 'Please verify your email address before logging in.',
+        email: user.email,
+        requiresVerification: true
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
