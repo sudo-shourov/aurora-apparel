@@ -1,5 +1,6 @@
 const express = require('express');
-const { createClient } = require('@libsql/client');
+// Import the pure HTTP driver to avoid native binary errors on Vercel
+const { createClient } = require('@libsql/client/http');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -10,7 +11,7 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Initialize Turso client dynamically using environment variables
+// Initialize HTTP client
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN
@@ -36,7 +37,6 @@ async function ensureDB() {
   }
 }
 
-// Middleware ensuring DB initialization on incoming API requests
 app.use(async (req, res, next) => {
   await ensureDB();
   next();
