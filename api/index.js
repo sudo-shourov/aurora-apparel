@@ -1,5 +1,5 @@
 const express = require('express');
-const { createClient } = require('@libsql/client');
+const { createClient } = require('@libsql/client/web');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -10,20 +10,16 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Helper function to get database client dynamically
-function getDb() {
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+// Initialize web client (uses standard HTTPS requests instead of native RPC migration calls)
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN
+});
 
-  if (!url || !authToken) {
-    throw new Error('TURSO_DATABASE_URL or TURSO_AUTH_TOKEN environment variable is missing.');
-  }
-
-  return createClient({ url, authToken });
-}
-
-// Auto-create users table on request
-async function ensureTableExists(db) {
+// Table setup helper
+let tableInitialized = false;
+async function ensureTableExists() {
+  if (tableInitialized) return;
   await db.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +29,7 @@ async function ensureTableExists(db) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  tableInitialized = true;
 }
 
 // Password Validation Helper
@@ -55,14 +52,11 @@ app.post('/api/signup', async (req, res) => {
   }
 
   if (!validatePassword(password)) {
-    return res.status(400).json({
-      error: 'Password rules not met.'
-    });
+    return res.status(400).json({ error: 'Password rules not met.' });
   }
 
   try {
-    const db = getDb();
-    await ensureTableExists(db);
+    await ensureTableExists();
 
     const cleanUsername = username.trim().toLowerCase();
     const cleanEmail = email.trim().toLowerCase();
@@ -84,7 +78,6 @@ app.post('/api/signup', async (req, res) => {
       args: [cleanUsername, cleanEmail, hashedPassword]
     });
 
-    // Safely extract insert ID (convert BigInt to Number/String)
     const userId = result.lastInsertRowid ? String(result.lastInsertRowid) : cleanUsername;
 
     const token = jwt.sign(
@@ -99,10 +92,8 @@ app.post('/api/signup', async (req, res) => {
       username: cleanUsername
     });
   } catch (error) {
-    console.error('Signup error details:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Internal server error.' 
-    });
+    console.error('Signup error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error.' });
   }
 });
 
@@ -115,8 +106,7 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    const db = getDb();
-    await ensureTableExists(db);
+    await ensureTableExists();
 
     const cleanUser = username.trim().toLowerCase();
     const result = await db.execute({
@@ -147,10 +137,8 @@ app.post('/api/login', async (req, res) => {
       username: String(user.username)
     });
   } catch (error) {
-    console.error('Login error details:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Internal server error.' 
-    });
+    console.error('Login error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error.' });
   }
 });
 
