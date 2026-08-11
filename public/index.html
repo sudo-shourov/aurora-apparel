@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AURA — Haute Couture</title>
+  
+  <!-- Typography Pairing: Luxury Brand (Playfair Display + Montserrat + Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Montserrat:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Aurora Dynamic Background -->
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar glass-card">
+    <div class="logo">AURA</div>
+    <div class="nav-links">
+      <a href="#catalog">Collection</a>
+      <a href="#about">About</a>
+    </div>
+    <div class="auth-status" id="authStatus">
+      <button class="btn-glass" onclick="openAuthModal('login')">Sign In</button>
+      <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content glass-card">
+      <span class="tagline">Autumn / Winter '26 Collection</span>
+      <h1>Elegance Refracted in Motion</h1>
+      <p>Discover hand-crafted bespoke garments designed with sustainable organic silks and structured silhouettes.</p>
+      <a href="#catalog" class="btn-primary">Explore Collection</a>
+    </div>
+  </header>
+
+  <!-- Catalog Grid -->
+  <section class="catalog-section" id="catalog">
+    <h2 class="section-title">Curated Pieces</h2>
+    <div class="product-grid">
+      
+      <div class="product-card glass-card">
+        <div class="img-wrapper">
+          <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80" alt="Aurora Silk Trench Coat">
+        </div>
+        <div class="product-info">
+          <h3>Aurora Silk Trench Coat</h3>
+          <p class="price">$1,250</p>
+          <button class="btn-glass full-width">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="product-card glass-card">
+        <div class="img-wrapper">
+          <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" alt="Bespoke Velvet Blazer">
+        </div>
+        <div class="product-info">
+          <h3>Bespoke Velvet Blazer</h3>
+          <p class="price">$890</p>
+          <button class="btn-glass full-width">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="product-card glass-card">
+        <div class="img-wrapper">
+          <img src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80" alt="Ethereal Evening Gown">
+        </div>
+        <div class="product-info">
+          <h3>Ethereal Evening Gown</h3>
+          <p class="price">$2,100</p>
+          <button class="btn-glass full-width">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="product-card glass-card">
+        <div class="img-wrapper">
+          <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80" alt="Monochrome Wool Overcoat">
+        </div>
+        <div class="product-info">
+          <h3>Monochrome Wool Overcoat</h3>
+          <p class="price">$1,480</p>
+          <button class="btn-glass full-width">Add to Cart</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-content glass-card">
+      <button class="close-btn" onclick="closeAuthModal()">&times;</button>
+      
+      <div class="tab-switcher">
+        <button id="loginTab" class="active" onclick="switchTab('login')">Sign In</button>
+        <button id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+
+      <div id="alertBox" class="alert-box hidden"></div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginUsername">Username or Email</label>
+          <input type="text" id="loginUsername" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary full-width">Sign In</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label for="signupUsername">Username</label>
+          <input type="text" id="signupUsername" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" oninput="assessPasswordStrength(this.value)" required autocomplete="new-password">
+          
+          <!-- Real-Time Password Strength Meter -->
+          <div class="strength-meter">
+            <div class="strength-bar" id="strengthBar"></div>
+          </div>
+          <p class="strength-label" id="strengthLabel">Password strength</p>
+          
+          <!-- Rules Checklist -->
+          <ul class="password-rules">
+            <li id="ruleLength">At least 8 characters</li>
+            <li id="ruleUpper">1 uppercase letter</li>
+            <li id="ruleLower">1 lowercase letter</li>
+            <li id="ruleNumber">1 number</li>
+            <li id="ruleSpecial">1 special character (!@#$%^&*)</li>
+          </ul>
+        </div>
+        <button type="submit" class="btn-primary full-width" id="signupBtn" disabled>Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
