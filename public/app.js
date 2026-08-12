@@ -1,9 +1,11 @@
 let currentUser = localStorage.getItem('aura_username') || null;
+let cart = JSON.parse(localStorage.getItem('aura_cart')) || [];
 
 document.addEventListener('DOMContentLoaded', () => {
   updateUserUI();
+  updateCartBadge();
+  renderCartPage();
 
-  // Attach submit listeners dynamically
   const signupForm = document.getElementById('signupForm') || document.getElementById('signup-form');
   const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
   const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
@@ -13,6 +15,129 @@ document.addEventListener('DOMContentLoaded', () => {
   if (verifyForm) verifyForm.addEventListener('submit', handleVerifyCode);
 });
 
+/* --- Cart Logic --- */
+function addToCart(id, name, price, img) {
+  const existingItem = cart.find(item => item.id === id);
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    cart.push({ id, name, price, img, quantity: 1 });
+  }
+  
+  saveCart();
+  updateCartBadge();
+  alert(`${name} added to cart.`);
+}
+
+function updateQuantity(id, change) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+
+  item.quantity += change;
+  if (item.quantity <= 0) {
+    cart = cart.filter(i => i.id !== id);
+  }
+
+  saveCart();
+  updateCartBadge();
+  renderCartPage();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  saveCart();
+  updateCartBadge();
+  renderCartPage();
+}
+
+function saveCart() {
+  localStorage.setItem('aura_cart', JSON.stringify(cart));
+}
+
+function updateCartBadge() {
+  const navCartCount = document.getElementById('navCartCount');
+  if (navCartCount) {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    navCartCount.textContent = totalItems;
+  }
+}
+
+function renderCartPage() {
+  const cartContent = document.getElementById('cartContent');
+  if (!cartContent) return;
+
+  if (cart.length === 0) {
+    cartContent.innerHTML = `
+      <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 20px;">Your cart is currently empty.</p>
+      <a href="collection.html" class="btn-primary">Browse Collection</a>
+    `;
+    return;
+  }
+
+  let total = 0;
+  let rows = cart.map(item => {
+    const itemTotal = item.price * item.quantity;
+    total += itemTotal;
+    return `
+      <tr>
+        <td>
+          <div class="cart-item-info">
+            <img src="${item.img}" alt="${item.name}">
+            <div>
+              <strong>${item.name}</strong>
+              <div style="color: var(--accent-gold);">$${item.price}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+          </div>
+        </td>
+        <td>$${itemTotal.toLocaleString()}</td>
+        <td>
+          <button class="btn-danger" onclick="removeFromCart(${item.id})">&times;</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  cartContent.innerHTML = `
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th>Subtotal</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+    <div class="cart-summary">
+      <div>
+        <span>Total Amount: </span>
+        <strong class="total-price">$${total.toLocaleString()}</strong>
+      </div>
+      <button class="btn-primary" onclick="checkout()">Proceed to Checkout</button>
+    </div>
+  `;
+}
+
+function checkout() {
+  if (cart.length === 0) return;
+  alert("Order placed successfully! Thank you for choosing AURA.");
+  cart = [];
+  saveCart();
+  updateCartBadge();
+  renderCartPage();
+}
+
+/* --- Authentication & Modal Logic --- */
 function openAuthModal(mode) {
   const modal = document.getElementById('authModal');
   if (modal) modal.classList.add('active');
@@ -33,7 +158,6 @@ function switchTab(tab) {
   const loginTab = document.getElementById('loginTab');
   const signupTab = document.getElementById('signupTab');
 
-  // Hide verification form when changing tabs
   if (verifyForm) {
     verifyForm.classList.add('hidden');
     verifyForm.style.display = 'none';
@@ -67,7 +191,6 @@ function clearAlert() {
   if (alertBox) alertBox.className = 'alert-box hidden';
 }
 
-/* Password Strength Evaluator */
 function assessPasswordStrength(password) {
   const rules = {
     length: password.length >= 8,
@@ -115,7 +238,6 @@ function updateRuleUI(elementId, isValid) {
   }
 }
 
-/* 1. Handle Signup */
 async function handleSignup(e) {
   e.preventDefault();
   
@@ -137,17 +259,14 @@ async function handleSignup(e) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Signup failed');
 
-    // Select forms
     const signupForm = document.getElementById('signupForm') || document.getElementById('signup-form');
     const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
     const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');
     const emailDisplay = document.getElementById('verifyEmailDisplay') || document.getElementById('verify-email-display');
 
-    // Hide Signup and Login forms
     if (signupForm) { signupForm.classList.add('hidden'); signupForm.style.display = 'none'; }
     if (loginForm) { loginForm.classList.add('hidden'); loginForm.style.display = 'none'; }
 
-    // Display Verification Form (remove .hidden so CSS !important doesn't block display)
     if (verifyForm) {
       verifyForm.classList.remove('hidden');
       verifyForm.style.display = 'block';
@@ -162,7 +281,6 @@ async function handleSignup(e) {
   }
 }
 
-/* 2. Handle 6-Digit Code Verification */
 async function handleVerifyCode(e) {
   e.preventDefault();
   const verifyForm = e.target;
@@ -187,7 +305,6 @@ async function handleVerifyCode(e) {
   }
 }
 
-/* 3. Handle Login */
 async function handleLogin(e) {
   e.preventDefault();
   const usernameInput = document.getElementById('loginUsername') || document.getElementById('login-username');
@@ -205,7 +322,6 @@ async function handleLogin(e) {
 
     const data = await res.json();
     
-    // If backend reports email is unverified, show verify form
     if (res.status === 403 && data.requiresVerification) {
       const loginForm = document.getElementById('loginForm') || document.getElementById('signin-form');
       const verifyForm = document.getElementById('verifyForm') || document.getElementById('verify-form');

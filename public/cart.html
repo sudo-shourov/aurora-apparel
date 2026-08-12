@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AURA — Shopping Cart</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Montserrat:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="aurora-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <nav class="navbar glass-card">
+    <a href="index.html" class="logo">AURA</a>
+    <div class="nav-links">
+      <a href="collection.html">Collection</a>
+      <a href="cart.html" class="active cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
+    </div>
+    <div class="auth-status" id="authStatus">
+      <button class="btn-glass" onclick="openAuthModal('login')">Sign In</button>
+      <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
+    </div>
+  </nav>
+
+  <main class="cart-container glass-card">
+    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">Your Shopping Bag</h2>
+    
+    <div id="cartContent">
+      <!-- Dynamic table rendered by JavaScript -->
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

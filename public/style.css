@@ -3,14 +3,15 @@
   --font-product: 'Montserrat', sans-serif;
   --font-body: 'Inter', sans-serif;
   
-  --glass-bg: rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.25);
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.18);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --glass-blur: blur(16px);
   
   --text-main: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.75);
   --accent-gold: #e2c08d;
+  --dark-card-bg: #0d0a18;
 }
 
 * {
@@ -88,10 +89,6 @@ body {
   box-shadow: var(--glass-shadow);
 }
 
-.auth-form.hidden {
-  display: none !important;
-}
-
 /* Navigation */
 .navbar {
   position: sticky;
@@ -111,6 +108,8 @@ body {
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 4px;
+  color: var(--text-main);
+  text-decoration: none;
 }
 
 .nav-links a {
@@ -121,8 +120,38 @@ body {
   transition: opacity 0.3s;
 }
 
-.nav-links a:hover {
-  opacity: 0.7;
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--accent-gold);
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-icon-btn {
+  position: relative;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cart-count {
+  background: var(--accent-gold);
+  color: #0f0c1b;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  padding: 2px 6px;
+  margin-left: 6px;
 }
 
 /* Typography Hierarchy */
@@ -191,6 +220,7 @@ h3 {
   transition: transform 0.2s, box-shadow 0.2s;
   text-decoration: none;
   display: inline-block;
+  text-align: center;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -213,10 +243,20 @@ h3 {
   font-size: 14px;
   cursor: pointer;
   transition: background 0.3s;
+  text-decoration: none;
 }
 
 .btn-glass:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+.btn-danger {
+  background: rgba(255, 71, 87, 0.2);
+  border: 1px solid #ff4757;
+  color: #ff6b81;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .full-width {
@@ -239,6 +279,7 @@ h3 {
 .product-card {
   overflow: hidden;
   transition: transform 0.3s;
+  background: var(--dark-card-bg);
 }
 
 .product-card:hover {
@@ -247,15 +288,17 @@ h3 {
 
 .img-wrapper {
   width: 100%;
-  height: 340px;
+  height: 380px;
   overflow: hidden;
+  background-color: #0b0c10; /* Dark image fallback */
 }
 
 .img-wrapper img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Ensures images fill dark cards without white edges */
   transition: transform 0.5s ease;
+  display: block;
 }
 
 .product-card:hover .img-wrapper img {
@@ -271,6 +314,68 @@ h3 {
   color: var(--accent-gold);
   margin-bottom: 16px;
   font-weight: 500;
+}
+
+/* Cart Page Styles */
+.cart-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 32px;
+}
+
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+}
+
+.cart-table th, .cart-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.cart-item-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cart-item-info img {
+  width: 70px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.cart-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.total-price {
+  font-size: 24px;
+  color: var(--accent-gold);
+  font-family: var(--font-product);
 }
 
 /* Modal & Auth Styles */
@@ -412,4 +517,4 @@ h3 {
 
 .alert-box.error { background: rgba(255, 71, 87, 0.2); border: 1px solid #ff4757; color: #ff6b81; }
 .alert-box.success { background: rgba(46, 213, 115, 0.2); border: 1px solid #2ed573; color: #7bed9f; }
-.hidden { display: none !important; }
+.auth-form.hidden, .hidden { display: none !important; }

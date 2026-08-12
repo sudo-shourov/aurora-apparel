@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AURA — Haute Couture</title>
+  <title>AURA — The Full Collection</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
   <nav class="navbar glass-card">
     <a href="index.html" class="logo">AURA</a>
     <div class="nav-links">
-      <a href="collection.html">Collection</a>
+      <a href="collection.html" class="active">Collection</a>
       <a href="cart.html" class="cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
     </div>
     <div class="auth-status" id="authStatus">
@@ -30,17 +30,8 @@
     </div>
   </nav>
 
-  <header class="hero">
-    <div class="hero-content glass-card">
-      <span class="tagline">Autumn / Winter '26 Collection</span>
-      <h1>Elegance Refracted in Motion</h1>
-      <p>Discover hand-crafted bespoke garments designed with sustainable organic silks and structured silhouettes.</p>
-      <a href="collection.html" class="btn-primary">Explore Collection</a>
-    </div>
-  </header>
-
-  <section class="catalog-section" id="catalog">
-    <h2 class="section-title">Curated Essentials</h2>
+  <section class="catalog-section">
+    <h2 class="section-title">Full Collection</h2>
     <div class="product-grid">
       
       <div class="product-card glass-card">
@@ -87,77 +78,30 @@
         </div>
       </div>
 
-    </div>
-  </section>
-
-  <!-- Auth Modal -->
-  <div class="modal-overlay" id="authModal">
-    <div class="modal-content glass-card">
-      <button class="close-btn" onclick="closeAuthModal()">&times;</button>
-      
-      <div class="tab-switcher">
-        <button id="loginTab" class="active" onclick="switchTab('login')">Sign In</button>
-        <button id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+      <div class="product-card glass-card">
+        <div class="img-wrapper">
+          <img src="https://images.unsplash.com/photo-1550614000-4895a10e1bfd?auto=format&fit=crop&w=800&q=80" alt="Cyberpunk Leather Jacket">
+        </div>
+        <div class="product-info">
+          <h3>Obsidian Biker Jacket</h3>
+          <p class="price">$1,850</p>
+          <button class="btn-glass full-width" onclick="addToCart(5, 'Obsidian Biker Jacket', 1850, 'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?auto=format&fit=crop&w=800&q=80')">Add to Cart</button>
+        </div>
       </div>
 
-      <div id="alertBox" class="alert-box hidden"></div>
+      <div class="product-card glass-card">
+        <div class="img-wrapper">
+          <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" alt="Midnight Silk Trousers">
+        </div>
+        <div class="product-info">
+          <h3>Midnight Silk Trousers</h3>
+          <p class="price">$620</p>
+          <button class="btn-glass full-width" onclick="addToCart(6, 'Midnight Silk Trousers', 620, 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80')">Add to Cart</button>
+        </div>
+      </div>
 
-      <form id="loginForm" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label for="loginUsername">Username or Email</label>
-          <input type="text" id="loginUsername" required autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" required autocomplete="current-password">
-        </div>
-        <button type="submit" class="btn-primary full-width">Sign In</button>
-      </form>
-
-      <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
-        <div class="form-group">
-          <label for="signupUsername">Username</label>
-          <input type="text" id="signupUsername" required autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label for="signupEmail">Email</label>
-          <input type="email" id="signupEmail" required autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label for="signupPassword">Password</label>
-          <input type="password" id="signupPassword" oninput="assessPasswordStrength(this.value)" required autocomplete="new-password">
-          
-          <div class="strength-meter">
-            <div class="strength-bar" id="strengthBar"></div>
-          </div>
-          <p class="strength-label" id="strengthLabel">Password strength</p>
-          
-          <ul class="password-rules">
-            <li id="ruleLength">At least 8 characters</li>
-            <li id="ruleUpper">1 uppercase letter</li>
-            <li id="ruleLower">1 lowercase letter</li>
-            <li id="ruleNumber">1 number</li>
-            <li id="ruleSpecial">1 special character (!@#$%^&*)</li>
-          </ul>
-        </div>
-        <button type="submit" class="btn-primary full-width" id="signupBtn" disabled>Create Account</button>
-      </form>
-
-      <form id="verifyForm" class="auth-form hidden" onsubmit="handleVerifyCode(event)">
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; text-align: center;">
-          We sent a 6-digit code to <br>
-          <strong id="verifyEmailDisplay" style="color: var(--accent-gold);"></strong>
-        </p>
-
-        <div class="form-group">
-          <label for="verifyCode">6-Digit Code</label>
-          <input type="text" id="verifyCode" placeholder="123456" maxlength="6" required style="letter-spacing: 6px; text-align: center; font-size: 1.2rem; font-weight: bold;" />
-        </div>
-
-        <button type="submit" class="btn-primary full-width" style="margin-top: 1rem;">Verify & Continue</button>
-      </form>
     </div>
-  </div>
+  </section>
 
   <script src="app.js"></script>
 </body>
