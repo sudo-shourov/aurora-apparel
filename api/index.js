@@ -114,7 +114,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route (Creates unverified user & sends email via Mailtrap REST API)
+// Sign Up Route (Creates unverified user & sends email via Mailtrap Sandbox API)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -149,30 +149,38 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Send email using Mailtrap HTTP REST API
-    const mailtrapResponse = await fetch('https://send.api.mailtrap.io/api/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.MAILTRAP_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: {
-          email: 'sirajul.alam.shourov@gmail.com',
-          name: 'Aurora Apparel'
+    // Send email using Mailtrap Sandbox (Email Testing) API
+    const mailtrapResponse = await fetch(
+      `https://sandbox.api.mailtrap.io/api/send/${process.env.MAILTRAP_INBOX_ID}`,
+      {
+        method: 'POST',
+        headers: {
+          'Api-Token': process.env.MAILTRAP_TOKEN,
+          'Content-Type': 'application/json'
         },
-        to: [{ email: cleanEmail }],
-        subject: 'Verify your Aurora Apparel Account',
-        html: `
-          <div style="font-family: sans-serif; padding: 20px;">
-            <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
-            <p>Your 6-digit verification code is:</p>
-            <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
-            <p>Please enter this code on the website to verify your account.</p>
-          </div>
-        `
-      })
-    });
+        body: JSON.stringify({
+          from: {
+            email: 'sirajul.alam.shourov@gmail.com',
+            name: 'Aurora Apparel'
+          },
+          to: [
+            {
+              email: cleanEmail,
+              name: cleanUsername
+            }
+          ],
+          subject: 'Verify your Aurora Apparel Account',
+          html: `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
+              <p>Your 6-digit verification code is:</p>
+              <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
+              <p>Please enter this code on the website to verify your account.</p>
+            </div>
+          `
+        })
+      }
+    );
 
     if (!mailtrapResponse.ok) {
       const errorText = await mailtrapResponse.text();
