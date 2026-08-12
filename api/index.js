@@ -114,7 +114,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route (Creates unverified user & sends email via Brevo REST API)
+// Sign Up Route (Creates unverified user & sends email via Mailtrap REST API)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -149,19 +149,21 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Direct HTTP fetch call to Brevo API (No SDK required)
-    const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+    // Send email using Mailtrap HTTP REST API
+    const mailtrapResponse = await fetch('https://send.api.mailtrap.io/api/send', {
       method: 'POST',
       headers: {
-        'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY,
-        'content-type': 'application/json'
+        'Authorization': `Bearer ${process.env.MAILTRAP_TOKEN}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        sender: { name: 'Aurora Apparel', email: 'sirajul.alam.shourov@gmail.com' },
+        from: {
+          email: 'sirajul.alam.shourov@gmail.com',
+          name: 'Aurora Apparel'
+        },
         to: [{ email: cleanEmail }],
         subject: 'Verify your Aurora Apparel Account',
-        htmlContent: `
+        html: `
           <div style="font-family: sans-serif; padding: 20px;">
             <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
             <p>Your 6-digit verification code is:</p>
@@ -172,11 +174,10 @@ app.post('/api/signup', async (req, res) => {
       })
     });
 
-    const brevoData = await brevoResponse.json();
-
-    if (!brevoResponse.ok) {
-      console.error('Brevo API Error:', brevoData);
-      throw new Error(brevoData.message || 'Failed to send verification email via Brevo');
+    if (!mailtrapResponse.ok) {
+      const errorText = await mailtrapResponse.text();
+      console.error('Mailtrap Error:', errorText);
+      throw new Error('Failed to send verification email via Mailtrap');
     }
 
     return res.status(201).json({
