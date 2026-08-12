@@ -24,6 +24,7 @@ async function executeSql(sql, args = []) {
     throw new Error('Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN in environment variables.');
   }
 
+  // Ensure HTTPS format for HTTP API calls
   let baseUrl = rawUrl.replace(/^libsql:\/\//, 'https://');
   if (!baseUrl.startsWith('https://')) {
     baseUrl = `https://${baseUrl}`;
@@ -67,6 +68,7 @@ async function executeSql(sql, args = []) {
     throw new Error(errorMsg);
   }
 
+  // Format rows into plain JS objects
   const columns = result.cols.map(col => col.name);
   const rows = result.rows.map(row => {
     const obj = {};
@@ -99,6 +101,7 @@ async function ensureTableExists() {
     )
   `);
 
+  // Migration step: Add columns to existing database if created without them
   try {
     await executeSql('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;');
   } catch (err) { /* column already exists */ }
@@ -120,7 +123,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route
+// Sign Up Route (Creates unverified user & sends email via Brevo API)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -148,6 +151,7 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate a 6-digit random code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     await executeSql(
@@ -155,7 +159,7 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Send email using Brevo HTTP API
+    // Send email using Brevo HTTP REST API
     const sendSmtpEmail = new Brevo.SendSmtpEmail();
     sendSmtpEmail.subject = 'Verify your Aurora Apparel Account';
     sendSmtpEmail.htmlContent = `
@@ -166,7 +170,7 @@ app.post('/api/signup', async (req, res) => {
         <p>Please enter this code on the website to verify your account.</p>
       </div>
     `;
-    sendSmtpEmail.sender = { name: 'Aurora Apparel', email: 'mhrafi551@gmail.com' };
+    sendSmtpEmail.sender = { name: 'Aurora Apparel', email: 'sirajul.alam.shourov@gmail.com' };
     sendSmtpEmail.to = [{ email: cleanEmail }];
 
     await apiInstance.sendTransacEmail(sendSmtpEmail);
@@ -182,7 +186,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Verification Route
+// Verification Route (Checks 6-digit code)
 app.post('/api/verify', async (req, res) => {
   const { email, code } = req.body;
 
@@ -203,6 +207,7 @@ app.post('/api/verify', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired verification code.' });
     }
 
+    // Mark as verified and remove code
     await executeSql(
       'UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?',
       [cleanEmail]
@@ -238,6 +243,7 @@ app.post('/api/login', async (req, res) => {
 
     const user = result.rows[0];
 
+    // Check if account is verified
     if (user.is_verified === 0 || user.is_verified === '0') {
       return res.status(403).json({
         error: 'Please verify your email address before logging in.',
