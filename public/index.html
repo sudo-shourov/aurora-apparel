@@ -9,20 +9,399 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Montserrat:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --font-heading: 'Playfair Display', serif;
+      --font-product: 'Montserrat', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --glass-blur: blur(16px);
+      
+      --text-main: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.75);
+      --accent-gold: #e2c08d;
+      --dark-card-bg: #0d0a18;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--text-main);
+      background: #0f0c1b;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* WebGL Canvas Background Container */
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Glassmorphism Generic Card */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: var(--glass-shadow);
+    }
+
+    /* Navigation */
+    .navbar {
+      position: sticky;
+      top: 20px;
+      width: 90%;
+      max-width: 1200px;
+      margin: 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+
+    .nav-links a {
+      color: var(--text-main);
+      text-decoration: none;
+      margin: 0 16px;
+      font-weight: 500;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--accent-gold);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .auth-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-icon-btn {
+      position: relative;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 16px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 20px;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .cart-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .cart-count {
+      background: var(--accent-gold);
+      color: #0f0c1b;
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 50%;
+      padding: 2px 6px;
+      margin-left: 8px;
+    }
+
+    /* Typography Hierarchy */
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 48px;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 38px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h3 {
+      font-family: var(--font-product);
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    /* Hero */
+    .hero {
+      display: flex;
+      justify-content: center;
+      padding: 60px 20px;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      text-align: center;
+      padding: 60px 40px;
+    }
+
+    .tagline {
+      font-family: var(--font-product);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--accent-gold);
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #e2c08d, #c5a059);
+      color: #0f0c1b;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-family: var(--font-product);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(226, 192, 141, 0.4);
+    }
+
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: var(--text-main);
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-family: var(--font-product);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-decoration: none;
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    /* Product Catalog */
+    .catalog-section {
+      max-width: 1200px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 32px;
+    }
+
+    .product-card {
+      overflow: hidden;
+      transition: transform 0.3s;
+      background: var(--dark-card-bg);
+    }
+
+    .product-card:hover {
+      transform: translateY(-8px);
+    }
+
+    .img-wrapper {
+      width: 100%;
+      height: 380px;
+      overflow: hidden;
+      background-color: #0b0c10;
+    }
+
+    .img-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+      display: block;
+    }
+
+    .product-card:hover .img-wrapper img {
+      transform: scale(1.06);
+    }
+
+    .product-info {
+      padding: 20px;
+    }
+
+    .price {
+      font-size: 18px;
+      color: var(--accent-gold);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+
+    /* Modal & Auth Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      width: 90%;
+      max-width: 440px;
+      padding: 36px;
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .tab-switcher {
+      display: flex;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .tab-switcher button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px;
+      font-family: var(--font-product);
+      font-size: 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-switcher button.active {
+      color: var(--text-main);
+      border-bottom-color: var(--accent-gold);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: rgba(0, 0, 0, 0.25);
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: var(--accent-gold);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-  <div class="aurora-bg">
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
-  </div>
 
+  <!-- WebGL Swarm Container (Replaces Aurora CSS Blobs) -->
+  <div id="canvas-container"></div>
+
+  <!-- Navigation -->
   <nav class="navbar glass-card">
-    <a href="index.html" class="logo">AURA</a>
+    <a href="#" class="logo">AURA</a>
     
     <div class="nav-links">
-      <a href="collection.html">Collection</a>
+      <a href="#catalog">Collection</a>
     </div>
 
     <div class="nav-right">
@@ -30,19 +409,21 @@
         <button class="btn-glass" onclick="openAuthModal('login')">Sign In</button>
         <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
       </div>
-      <a href="cart.html" class="cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
+      <a href="#cart" class="cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
     </div>
   </nav>
 
+  <!-- Hero Section -->
   <header class="hero">
     <div class="hero-content glass-card">
       <span class="tagline">Autumn / Winter '26 Collection</span>
       <h1>Elegance Refracted in Motion</h1>
       <p>Discover hand-crafted bespoke garments designed with sustainable organic silks and structured silhouettes.</p>
-      <a href="collection.html" class="btn-primary">Explore Collection</a>
+      <a href="#catalog" class="btn-primary">Explore Collection</a>
     </div>
   </header>
 
+  <!-- Catalog Section -->
   <section class="catalog-section" id="catalog">
     <h2 class="section-title">Curated Essentials</h2>
     <div class="product-grid">
@@ -54,7 +435,7 @@
         <div class="product-info">
           <h3>Aurora Silk Trench Coat</h3>
           <p class="price">$1,250</p>
-          <button class="btn-glass full-width" onclick="addToCart(1, 'Aurora Silk Trench Coat', 1250, 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80')">Add to Cart</button>
+          <button class="btn-glass full-width">Add to Cart</button>
         </div>
       </div>
 
@@ -65,7 +446,7 @@
         <div class="product-info">
           <h3>Bespoke Velvet Blazer</h3>
           <p class="price">$890</p>
-          <button class="btn-glass full-width" onclick="addToCart(2, 'Bespoke Velvet Blazer', 890, 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80')">Add to Cart</button>
+          <button class="btn-glass full-width">Add to Cart</button>
         </div>
       </div>
 
@@ -76,7 +457,7 @@
         <div class="product-info">
           <h3>Ethereal Evening Gown</h3>
           <p class="price">$2,100</p>
-          <button class="btn-glass full-width" onclick="addToCart(3, 'Ethereal Evening Gown', 2100, 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80')">Add to Cart</button>
+          <button class="btn-glass full-width">Add to Cart</button>
         </div>
       </div>
 
@@ -87,7 +468,7 @@
         <div class="product-info">
           <h3>Monochrome Wool Overcoat</h3>
           <p class="price">$1,480</p>
-          <button class="btn-glass full-width" onclick="addToCart(4, 'Monochrome Wool Overcoat', 1480, 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80')">Add to Cart</button>
+          <button class="btn-glass full-width">Add to Cart</button>
         </div>
       </div>
 
@@ -104,65 +485,180 @@
         <button id="signupTab" onclick="switchTab('signup')">Sign Up</button>
       </div>
 
-      <div id="alertBox" class="alert-box hidden"></div>
-
-      <form id="loginForm" onsubmit="handleLogin(event)">
+      <form id="loginForm">
         <div class="form-group">
           <label for="loginUsername">Username or Email</label>
-          <input type="text" id="loginUsername" required autocomplete="username">
+          <input type="text" id="loginUsername" required>
         </div>
         <div class="form-group">
           <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" required autocomplete="current-password">
+          <input type="password" id="loginPassword" required>
         </div>
         <button type="submit" class="btn-primary full-width">Sign In</button>
       </form>
 
-      <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
+      <form id="signupForm" class="hidden">
         <div class="form-group">
           <label for="signupUsername">Username</label>
-          <input type="text" id="signupUsername" required autocomplete="username">
+          <input type="text" id="signupUsername" required>
         </div>
         <div class="form-group">
           <label for="signupEmail">Email</label>
-          <input type="email" id="signupEmail" required autocomplete="email">
+          <input type="email" id="signupEmail" required>
         </div>
         <div class="form-group">
           <label for="signupPassword">Password</label>
-          <input type="password" id="signupPassword" oninput="assessPasswordStrength(this.value)" required autocomplete="new-password">
-          
-          <div class="strength-meter">
-            <div class="strength-bar" id="strengthBar"></div>
-          </div>
-          <p class="strength-label" id="strengthLabel">Password strength</p>
-          
-          <ul class="password-rules">
-            <li id="ruleLength">At least 8 characters</li>
-            <li id="ruleUpper">1 uppercase letter</li>
-            <li id="ruleLower">1 lowercase letter</li>
-            <li id="ruleNumber">1 number</li>
-            <li id="ruleSpecial">1 special character (!@#$%^&*)</li>
-          </ul>
+          <input type="password" id="signupPassword" required>
         </div>
-        <button type="submit" class="btn-primary full-width" id="signupBtn" disabled>Create Account</button>
-      </form>
-
-      <form id="verifyForm" class="auth-form hidden" onsubmit="handleVerifyCode(event)">
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; text-align: center;">
-          We sent a 6-digit code to <br>
-          <strong id="verifyEmailDisplay" style="color: var(--accent-gold);"></strong>
-        </p>
-
-        <div class="form-group">
-          <label for="verifyCode">6-Digit Code</label>
-          <input type="text" id="verifyCode" placeholder="123456" maxlength="6" required style="letter-spacing: 6px; text-align: center; font-size: 1.2rem; font-weight: bold;" />
-        </div>
-
-        <button type="submit" class="btn-primary full-width" style="margin-top: 1rem;">Verify & Continue</button>
+        <button type="submit" class="btn-primary full-width">Create Account</button>
       </form>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- WebGL Particle Swarm Script -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+    const COUNT = 35000;
+    const SPEED_MULT = 1.2;
+    const container = document.getElementById('canvas-container');
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0f0c1b, 0.008);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, 0, 110);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.strength = 1.4; 
+    bloomPass.radius = 0.5; 
+    bloomPass.threshold = 0.1;
+    composer.addPass(bloomPass);
+
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
+    const target = new THREE.Vector3();
+
+    const geometry = new THREE.ConeGeometry(0.12, 0.6, 4).rotateX(Math.PI / 2);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+    const instancedMesh = new THREE.InstancedMesh(geometry, material, COUNT);
+    instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(instancedMesh);
+
+    const positions = [];
+    for(let i = 0; i < COUNT; i++) {
+      positions.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
+      instancedMesh.setColorAt(i, color.setHex(0xe2c08d));
+    }
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime() * SPEED_MULT;
+
+      const scale = 95;
+      const spin = 2.5;
+      const accretion = 1.1;
+      const warp = 1.0;
+
+      for(let i = 0; i < COUNT; i++) {
+        const u = (i + 0.5) / COUNT;
+        const ga = 2.399963229728653;
+        const a = i * ga;
+        
+        const t = time * 0.3;
+        const band = u * 24.0 - 12.0;
+        
+        const disk = 1.0 - Math.abs(Math.sin(band * 0.5));
+        const radius = scale * (0.08 + 1.9 * u * u);
+        
+        const swirl = a + spin * Math.log(radius + 1.0) - t * (2.0 + 3.0 * (1.0 - u));
+        
+        const grav = 1.0 / (1.0 + radius * 0.015);
+        const bend = warp * grav * grav;
+        
+        const x0 = radius * Math.cos(swirl);
+        const z0 = radius * Math.sin(swirl);
+        
+        const x = x0 + bend * z0;
+        const z = z0 - bend * x0;
+        
+        const y = scale * 0.22 * disk * Math.sin(a * 0.17 + t * 4.0) * accretion;
+        
+        target.set(x, y, z);
+        
+        const heat = 1.0 - Math.min(1.0, radius / (scale * 2.0));
+        
+        // Theme Color Gradient: Deep Purple -> Magenta -> Warm Gold
+        const hue = 0.72 - (0.62 * heat); 
+        const sat = 0.75 + 0.25 * heat;
+        const light = 0.2 + 0.55 * Math.pow(heat, 1.3);
+        
+        color.setHSL(hue, sat, light);
+
+        positions[i].lerp(target, 0.08);
+        dummy.position.copy(positions[i]);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+        instancedMesh.setColorAt(i, color);
+      }
+
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
+
+      composer.render();
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+
+  <!-- UI & Modal Functionality -->
+  <script>
+    function openAuthModal(mode) {
+      document.getElementById('authModal').classList.add('active');
+      switchTab(mode);
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.remove('active');
+    }
+
+    function switchTab(tab) {
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const loginTab = document.getElementById('loginTab');
+      const signupTab = document.getElementById('signupTab');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+        loginTab.classList.add('active');
+        signupTab.classList.remove('active');
+      } else {
+        signupForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+        signupTab.classList.add('active');
+        loginTab.classList.remove('active');
+      }
+    }
+  </script>
 </body>
 </html>
