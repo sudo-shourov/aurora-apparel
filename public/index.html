@@ -32,6 +32,10 @@
       padding: 0;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       font-family: var(--font-body);
       font-size: 15px;
@@ -379,6 +383,90 @@
       border-color: var(--accent-gold);
     }
 
+    /* Cart Drawer */
+    .cart-drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+
+    .cart-drawer-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .cart-drawer {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 100%;
+      max-width: 380px;
+      height: 100vh;
+      background: var(--dark-card-bg);
+      border-left: 1px solid var(--glass-border);
+      box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+
+    .cart-drawer.active {
+      right: 0;
+    }
+
+    .cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 16px;
+    }
+
+    .cart-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .cart-footer {
+      border-top: 1px solid var(--glass-border);
+      padding-top: 16px;
+    }
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .empty-msg {
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 40px;
+    }
+
     .hidden { display: none !important; }
   </style>
 
@@ -393,7 +481,7 @@
 </head>
 <body>
 
-  <!-- WebGL Swarm Container -->
+  <!-- WebGL Canvas Container -->
   <div id="canvas-container"></div>
 
   <!-- Navigation -->
@@ -409,7 +497,7 @@
         <button class="btn-glass" onclick="openAuthModal('login')">Sign In</button>
         <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
       </div>
-      <a href="#cart" class="cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
+      <button class="cart-icon-btn" onclick="openCartDrawer()">🛒 Cart <span class="cart-count" id="navCartCount">0</span></button>
     </div>
   </nav>
 
@@ -419,7 +507,7 @@
       <span class="tagline">Autumn / Winter '26 Collection</span>
       <h1>Elegance Refracted in Motion</h1>
       <p>Discover hand-crafted bespoke garments designed with sustainable organic silks and structured silhouettes.</p>
-      <a href="collection.html" class="btn-primary">Explore Collection</a>
+      <a href="#catalog" class="btn-primary">Explore Collection</a>
     </div>
   </header>
 
@@ -435,7 +523,7 @@
         <div class="product-info">
           <h3>Aurora Silk Trench Coat</h3>
           <p class="price">$1,250</p>
-          <button class="btn-glass full-width">Add to Cart</button>
+          <button class="btn-glass full-width" onclick="addToCart('Aurora Silk Trench Coat', 1250)">Add to Cart</button>
         </div>
       </div>
 
@@ -446,7 +534,7 @@
         <div class="product-info">
           <h3>Bespoke Velvet Blazer</h3>
           <p class="price">$890</p>
-          <button class="btn-glass full-width">Add to Cart</button>
+          <button class="btn-glass full-width" onclick="addToCart('Bespoke Velvet Blazer', 890)">Add to Cart</button>
         </div>
       </div>
 
@@ -457,7 +545,7 @@
         <div class="product-info">
           <h3>Ethereal Evening Gown</h3>
           <p class="price">$2,100</p>
-          <button class="btn-glass full-width">Add to Cart</button>
+          <button class="btn-glass full-width" onclick="addToCart('Ethereal Evening Gown', 2100)">Add to Cart</button>
         </div>
       </div>
 
@@ -468,7 +556,7 @@
         <div class="product-info">
           <h3>Monochrome Wool Overcoat</h3>
           <p class="price">$1,480</p>
-          <button class="btn-glass full-width">Add to Cart</button>
+          <button class="btn-glass full-width" onclick="addToCart('Monochrome Wool Overcoat', 1480)">Add to Cart</button>
         </div>
       </div>
 
@@ -515,23 +603,41 @@
     </div>
   </div>
 
-  <!-- WebGL Interactive Real-Life Black Hole Swarm -->
+  <!-- Cart Drawer -->
+  <div class="cart-drawer-overlay" id="cartDrawerOverlay" onclick="closeCartDrawer()"></div>
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <h3>Your Shopping Cart</h3>
+      <button class="close-btn" onclick="closeCartDrawer()">&times;</button>
+    </div>
+    <div class="cart-body" id="cartItemsContainer">
+      <p class="empty-msg">Your cart is empty.</p>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total:</span>
+        <span id="cartTotal">$0</span>
+      </div>
+      <button class="btn-primary full-width">Checkout</button>
+    </div>
+  </div>
+
+  <!-- WebGL Dynamic Background Controller -->
   <script type="module">
     import * as THREE from 'three';
     import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-    const COUNT = 40000;
-    // 1. SLOWER SPEED MULTIPLIER
-    const SPEED_MULT = 0.25; 
+    const COUNT = 45000;
+    const SPEED_MULT = 0.35;
     const container = document.getElementById('canvas-container');
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.006);
+    scene.fog = new THREE.FogExp2(0x000000, 0.008);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.set(0, 0, 110);
+    camera.position.set(0, 0, 100);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -542,7 +648,7 @@
     composer.addPass(new RenderPass(scene, camera));
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
     bloomPass.strength = 1.8; 
-    bloomPass.radius = 0.6; 
+    bloomPass.radius = 0.4; 
     bloomPass.threshold = 0.05;
     composer.addPass(bloomPass);
 
@@ -550,8 +656,8 @@
     const color = new THREE.Color();
     const target = new THREE.Vector3();
 
-    const geometry = new THREE.ConeGeometry(0.12, 0.6, 4).rotateX(Math.PI / 2);
-    const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const geometry = new THREE.ConeGeometry(0.1, 0.5, 4).rotateX(Math.PI / 2);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00aaff });
 
     const instancedMesh = new THREE.InstancedMesh(geometry, material, COUNT);
     instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -560,10 +666,21 @@
     const positions = [];
     for(let i = 0; i < COUNT; i++) {
       positions.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
-      instancedMesh.setColorAt(i, color.setHex(0xffffff));
+      instancedMesh.setColorAt(i, color.setHex(0x00ff88));
     }
 
-    // 2. INTERACTABILITY: MOUSE TRACKING
+    // Dynamic Reactive Background State
+    window.bgState = {
+      scale: 60,
+      targetScale: 60,
+      twist: 1.2,
+      targetTwist: 1.2,
+      chaos: 0.6,
+      targetChaos: 0.6,
+      camX: 0,
+      targetCamX: 0
+    };
+
     const mouse = new THREE.Vector2(0, 0);
     const targetRotation = new THREE.Vector2(0, 0);
 
@@ -578,79 +695,46 @@
       requestAnimationFrame(animate);
       const time = clock.getElapsedTime() * SPEED_MULT;
 
-      // Smooth mouse interaction lerp
-      targetRotation.x += (mouse.y * 0.4 - targetRotation.x) * 0.03;
-      targetRotation.y += (mouse.x * 0.4 - targetRotation.y) * 0.03;
+      // Smooth Background Morph Transitions
+      const state = window.bgState;
+      state.scale += (state.targetScale - state.scale) * 0.05;
+      state.twist += (state.targetTwist - state.twist) * 0.05;
+      state.chaos += (state.targetChaos - state.chaos) * 0.05;
+      state.camX += (state.targetCamX - state.camX) * 0.05;
+
+      camera.position.x = state.camX;
+
+      targetRotation.x += (mouse.y * 0.3 - targetRotation.x) * 0.03;
+      targetRotation.y += (mouse.x * 0.3 - targetRotation.y) * 0.03;
 
       instancedMesh.rotation.x = targetRotation.x;
       instancedMesh.rotation.y = targetRotation.y;
 
-      const scale = 90;
-      const spin = 2.8;
-      const accretion = 1.0;
-      const warp = 1.2;
+      const count = COUNT;
+      const golden = 1.618033988749895;
 
       for(let i = 0; i < COUNT; i++) {
-        const u = (i + 0.5) / COUNT;
-        const ga = 2.399963229728653;
-        const a = i * ga;
+        const theta = i * golden * 6.283185307;
+        const phi = Math.acos(1 - 2 * (i + 0.5) / count);
+        const radius = state.scale * (0.8 + 0.3 * Math.sin(time * 0.5 + i * 0.001));
+        const rWarp = radius + state.chaos * 10 * Math.sin(theta * 3 + phi * 2 + time * 0.7);
+        const thetaWarp = theta + state.twist * Math.sin(phi * 4 + time * 0.4);
         
-        const t = time * 0.35;
-        const band = u * 24.0 - 12.0;
+        const x = rWarp * Math.sin(phi) * Math.cos(thetaWarp);
+        const y = rWarp * Math.cos(phi);
+        const z = rWarp * Math.sin(phi) * Math.sin(thetaWarp);
         
-        const disk = 1.0 - Math.abs(Math.sin(band * 0.5));
-        const radius = scale * (0.08 + 1.9 * u * u);
+        const gx = x + state.chaos * 2 * Math.sin(y * 0.1 + time * 0.5);
+        const gy = y + state.chaos * 1.5 * Math.sin(x * 0.08 + z * 0.06 + time * 0.3);
+        const gz = z + state.chaos * 2 * Math.cos(x * 0.07 + y * 0.09 + time * 0.4);
         
-        const swirl = a + spin * Math.log(radius + 1.0) - t * (2.0 + 3.0 * (1.0 - u));
-        
-        const grav = 1.0 / (1.0 + radius * 0.015);
-        const bend = warp * grav * grav;
-        
-        const x0 = radius * Math.cos(swirl);
-        const z0 = radius * Math.sin(swirl);
-        
-        const x = x0 + bend * z0;
-        const z = z0 - bend * x0;
-        
-        const y = scale * 0.22 * disk * Math.sin(a * 0.17 + t * 4.0) * accretion;
-        
-        target.set(x, y, z);
-        
-        // 3. REAL-LIFE ACCRETION DISK GRADIENT (Event Horizon / M87 / Interstellar Style)
-        // Heat: 1.0 = Event Horizon Core (Blinding White Hot), 0.0 = Far Edges (Faint Deep Red)
-        const heat = 1.0 - Math.min(1.0, radius / (scale * 1.8));
+        target.set(gx, gy, gz);
 
-        let r, g, b;
+        const hue = (0.6 + 0.4 * Math.sin(theta * 0.5 + phi * 0.3 + time * 0.05)) % 1.0;
+        const lightness = 0.4 + 0.4 * (0.5 + 0.5 * Math.sin(time * 0.2 + i * 0.0005));
+        color.setHSL(hue, 0.85, Math.min(1, Math.max(0.2, lightness)));
 
-        if (heat > 0.8) {
-          // Core: Pure White Hot to Bright Golden Yellow
-          const factor = (heat - 0.8) / 0.2;
-          r = 1.0;
-          g = 0.85 + 0.15 * factor;
-          b = 0.6 + 0.4 * factor;
-        } else if (heat > 0.4) {
-          // Mid Disk: Golden Yellow to Fiery Orange
-          const factor = (heat - 0.4) / 0.4;
-          r = 1.0;
-          g = 0.3 + 0.55 * factor;
-          b = 0.05 * factor;
-        } else if (heat > 0.15) {
-          // Outer Disk: Deep Fiery Orange-Red to Crimson
-          const factor = (heat - 0.15) / 0.25;
-          r = 0.85 + 0.15 * factor;
-          g = 0.08 * factor;
-          b = 0.02;
-        } else {
-          // Farthest Boundary: Crimson Red fading into cosmic indigo/black
-          const factor = heat / 0.15;
-          r = 0.2 + 0.65 * factor;
-          g = 0.0;
-          b = 0.1 * (1.0 - factor);
-        }
-
-        color.setRGB(r, g, b);
-
-        positions[i].lerp(target, 0.08);
+        positions[i].lerp(target, 0.1);
         dummy.position.copy(positions[i]);
         dummy.updateMatrix();
         instancedMesh.setMatrixAt(i, dummy.matrix);
@@ -672,8 +756,95 @@
     });
   </script>
 
-  <!-- UI & Modal Functionality -->
+  <!-- Navigation, Cart, and Background Reaction Logic -->
   <script>
+    let cart = [];
+
+    // Scroll Detection to morph background on Collection scroll
+    window.addEventListener('scroll', () => {
+      if (!window.bgState) return;
+      const catalogEl = document.getElementById('catalog');
+      const rect = catalogEl.getBoundingClientRect();
+      
+      if (rect.top < window.innerHeight && rect.bottom >= 0) {
+        // Entering Collection: Expand particle nebula and twist faster
+        window.bgState.targetScale = 85;
+        window.bgState.targetTwist = 2.4;
+        window.bgState.targetChaos = 1.1;
+      } else {
+        // Hero Section: Normal state
+        window.bgState.targetScale = 60;
+        window.bgState.targetTwist = 1.2;
+        window.bgState.targetChaos = 0.6;
+      }
+    });
+
+    function openCartDrawer() {
+      document.getElementById('cartDrawer').classList.add('active');
+      document.getElementById('cartDrawerOverlay').classList.add('active');
+      
+      // Shift Nebula camera perspective sideways when Cart Drawer opens
+      if (window.bgState) {
+        window.bgState.targetCamX = -25;
+        window.bgState.targetChaos = 1.4;
+      }
+    }
+
+    function closeCartDrawer() {
+      document.getElementById('cartDrawer').classList.remove('active');
+      document.getElementById('cartDrawerOverlay').classList.remove('active');
+      
+      // Reset background perspective when Cart Drawer closes
+      if (window.bgState) {
+        window.bgState.targetCamX = 0;
+        window.bgState.targetChaos = 0.6;
+      }
+    }
+
+    function addToCart(title, price) {
+      cart.push({ title, price });
+      updateCartUI();
+      openCartDrawer();
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const cartCountEl = document.getElementById('navCartCount');
+      const itemsContainer = document.getElementById('cartItemsContainer');
+      const totalEl = document.getElementById('cartTotal');
+      
+      cartCountEl.textContent = cart.length;
+
+      if (cart.length === 0) {
+        itemsContainer.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
+        totalEl.textContent = '$0';
+        return;
+      }
+
+      let total = 0;
+      itemsContainer.innerHTML = '';
+      
+      cart.forEach((item, index) => {
+        total += item.price;
+        const itemEl = document.createElement('div');
+        itemEl.className = 'cart-item';
+        itemEl.innerHTML = `
+          <div>
+            <strong>${item.title}</strong>
+            <div>$${item.price}</div>
+          </div>
+          <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:18px;">&times;</button>
+        `;
+        itemsContainer.appendChild(itemEl);
+      });
+
+      totalEl.textContent = `$${total.toLocaleString()}`;
+    }
+
     function openAuthModal(mode) {
       document.getElementById('authModal').classList.add('active');
       switchTab(mode);
