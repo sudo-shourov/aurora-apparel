@@ -7,6 +7,7 @@
     "start": "node api/index.js"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.3",
     "@libsql/client": "^0.6.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

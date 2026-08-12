@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const Brevo = require('@getbrevo/brevo');
 
 const app = express();
 app.use(cors());
@@ -10,19 +10,10 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
 
-// Brevo SMTP Transporter Configuration
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // TLS
-  auth: {
-    user: process.env.BREVO_USER, // b5483a001@smtp-brevo.com
-    pass: process.env.BREVO_PASS, // Your Brevo SMTP key
-  },
-  connectionTimeout: 8000, // Timeout after 8s to prevent Vercel 500 crashes
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-});
+// Initialize Brevo Transactional Emails API Client
+const apiInstance = new Brevo.TransactionalEmailsApi();
+const apiKey = apiInstance.authentications['apiKey'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
 
 // Direct HTTP SQL Executor for Turso
 async function executeSql(sql, args = []) {
@@ -33,7 +24,6 @@ async function executeSql(sql, args = []) {
     throw new Error('Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN in environment variables.');
   }
 
-  // Ensure HTTPS format for HTTP API calls
   let baseUrl = rawUrl.replace(/^libsql:\/\//, 'https://');
   if (!baseUrl.startsWith('https://')) {
     baseUrl = `https://${baseUrl}`;
@@ -77,7 +67,6 @@ async function executeSql(sql, args = []) {
     throw new Error(errorMsg);
   }
 
-  // Format rows into plain JS objects
   const columns = result.cols.map(col => col.name);
   const rows = result.rows.map(row => {
     const obj = {};
@@ -110,7 +99,6 @@ async function ensureTableExists() {
     )
   `);
 
-  // Migration step: Add columns to existing database if created without them
   try {
     await executeSql('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;');
   } catch (err) { /* column already exists */ }
@@ -167,20 +155,21 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Send email using Brevo via Nodemailer
-    await transporter.sendMail({
-      from: `"Aurora Apparel" <mhrafi551@gmail.com>`,
-      to: cleanEmail,
-      subject: 'Verify your Aurora Apparel Account',
-      html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
-          <p>Your 6-digit verification code is:</p>
-          <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
-          <p>Please enter this code on the website to verify your account.</p>
-        </div>
-      `
-    });
+    // Send email using Brevo HTTP API
+    const sendSmtpEmail = new Brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = 'Verify your Aurora Apparel Account';
+    sendSmtpEmail.htmlContent = `
+      <div style="font-family: sans-serif; padding: 20px;">
+        <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
+        <p>Your 6-digit verification code is:</p>
+        <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
+        <p>Please enter this code on the website to verify your account.</p>
+      </div>
+    `;
+    sendSmtpEmail.sender = { name: 'Aurora Apparel', email: 'mhrafi551@gmail.com' };
+    sendSmtpEmail.to = [{ email: cleanEmail }];
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
 
     return res.status(201).json({
       message: 'Account created! Please check your email for your 6-digit verification code.',
