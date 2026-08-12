@@ -36,7 +36,7 @@
       font-family: var(--font-body);
       font-size: 15px;
       color: var(--text-main);
-      background: #0f0c1b;
+      background: #000000;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -393,7 +393,7 @@
 </head>
 <body>
 
-  <!-- WebGL Swarm Container (Replaces Aurora CSS Blobs) -->
+  <!-- WebGL Swarm Container -->
   <div id="canvas-container"></div>
 
   <!-- Navigation -->
@@ -515,19 +515,20 @@
     </div>
   </div>
 
-  <!-- WebGL Particle Swarm Script -->
+  <!-- WebGL Interactive Real-Life Black Hole Swarm -->
   <script type="module">
     import * as THREE from 'three';
     import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-    const COUNT = 35000;
-    const SPEED_MULT = 1.2;
+    const COUNT = 40000;
+    // 1. SLOWER SPEED MULTIPLIER
+    const SPEED_MULT = 0.25; 
     const container = document.getElementById('canvas-container');
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0f0c1b, 0.008);
+    scene.fog = new THREE.FogExp2(0x000000, 0.006);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.set(0, 0, 110);
@@ -540,9 +541,9 @@
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.strength = 1.4; 
-    bloomPass.radius = 0.5; 
-    bloomPass.threshold = 0.1;
+    bloomPass.strength = 1.8; 
+    bloomPass.radius = 0.6; 
+    bloomPass.threshold = 0.05;
     composer.addPass(bloomPass);
 
     const dummy = new THREE.Object3D();
@@ -559,8 +560,17 @@
     const positions = [];
     for(let i = 0; i < COUNT; i++) {
       positions.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
-      instancedMesh.setColorAt(i, color.setHex(0xe2c08d));
+      instancedMesh.setColorAt(i, color.setHex(0xffffff));
     }
+
+    // 2. INTERACTABILITY: MOUSE TRACKING
+    const mouse = new THREE.Vector2(0, 0);
+    const targetRotation = new THREE.Vector2(0, 0);
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
 
     const clock = new THREE.Clock();
 
@@ -568,17 +578,24 @@
       requestAnimationFrame(animate);
       const time = clock.getElapsedTime() * SPEED_MULT;
 
-      const scale = 95;
-      const spin = 2.5;
-      const accretion = 1.1;
-      const warp = 1.0;
+      // Smooth mouse interaction lerp
+      targetRotation.x += (mouse.y * 0.4 - targetRotation.x) * 0.03;
+      targetRotation.y += (mouse.x * 0.4 - targetRotation.y) * 0.03;
+
+      instancedMesh.rotation.x = targetRotation.x;
+      instancedMesh.rotation.y = targetRotation.y;
+
+      const scale = 90;
+      const spin = 2.8;
+      const accretion = 1.0;
+      const warp = 1.2;
 
       for(let i = 0; i < COUNT; i++) {
         const u = (i + 0.5) / COUNT;
         const ga = 2.399963229728653;
         const a = i * ga;
         
-        const t = time * 0.3;
+        const t = time * 0.35;
         const band = u * 24.0 - 12.0;
         
         const disk = 1.0 - Math.abs(Math.sin(band * 0.5));
@@ -599,14 +616,39 @@
         
         target.set(x, y, z);
         
-        const heat = 1.0 - Math.min(1.0, radius / (scale * 2.0));
-        
-        // Theme Color Gradient: Deep Purple -> Magenta -> Warm Gold
-        const hue = 0.72 - (0.62 * heat); 
-        const sat = 0.75 + 0.25 * heat;
-        const light = 0.2 + 0.55 * Math.pow(heat, 1.3);
-        
-        color.setHSL(hue, sat, light);
+        // 3. REAL-LIFE ACCRETION DISK GRADIENT (Event Horizon / M87 / Interstellar Style)
+        // Heat: 1.0 = Event Horizon Core (Blinding White Hot), 0.0 = Far Edges (Faint Deep Red)
+        const heat = 1.0 - Math.min(1.0, radius / (scale * 1.8));
+
+        let r, g, b;
+
+        if (heat > 0.8) {
+          // Core: Pure White Hot to Bright Golden Yellow
+          const factor = (heat - 0.8) / 0.2;
+          r = 1.0;
+          g = 0.85 + 0.15 * factor;
+          b = 0.6 + 0.4 * factor;
+        } else if (heat > 0.4) {
+          // Mid Disk: Golden Yellow to Fiery Orange
+          const factor = (heat - 0.4) / 0.4;
+          r = 1.0;
+          g = 0.3 + 0.55 * factor;
+          b = 0.05 * factor;
+        } else if (heat > 0.15) {
+          // Outer Disk: Deep Fiery Orange-Red to Crimson
+          const factor = (heat - 0.15) / 0.25;
+          r = 0.85 + 0.15 * factor;
+          g = 0.08 * factor;
+          b = 0.02;
+        } else {
+          // Farthest Boundary: Crimson Red fading into cosmic indigo/black
+          const factor = heat / 0.15;
+          r = 0.2 + 0.65 * factor;
+          g = 0.0;
+          b = 0.1 * (1.0 - factor);
+        }
+
+        color.setRGB(r, g, b);
 
         positions[i].lerp(target, 0.08);
         dummy.position.copy(positions[i]);
