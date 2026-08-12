@@ -133,21 +133,41 @@ app.post('/api/signup', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     const existingUser = await executeSql(
-      'SELECT id FROM users WHERE username = ? OR email = ?',
+      'SELECT id, is_verified FROM users WHERE username = ? OR email = ?',
       [cleanUsername, cleanEmail]
     );
 
-    if (existingUser.rows.length > 0) {
+    const alreadyVerified = existingUser.rows.length > 0 &&
+      (existingUser.rows[0].is_verified === 1 || existingUser.rows[0].is_verified === '1');
+
+    // Only a fully verified account blocks a new signup. An unverified
+    // leftover row from a previous failed attempt gets refreshed instead.
+    if (alreadyVerified) {
       return res.status(409).json({ error: 'Username or Email is already registered.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await executeSql(
-      'INSERT INTO users (username, email, password, is_verified, verification_code) VALUES (?, ?, ?, 0, ?)',
-      [cleanUsername, cleanEmail, hashedPassword, verificationCode]
-    );
+    if (existingUser.rows.length > 0) {
+      await executeSql(
+        'UPDATE users SET username = ?, password = ?, verification_code = ? WHERE email = ?',
+        [cleanUsername, hashedPassword, verificationCode, cleanEmail]
+      );
+    } else {
+      try {
+        await executeSql(
+          'INSERT INTO users (username, email, password, is_verified, verification_code) VALUES (?, ?, ?, 0, ?)',
+          [cleanUsername, cleanEmail, hashedPassword, verificationCode]
+        );
+      } catch (insertErr) {
+        // Race condition: two requests passed the check above at the same time.
+        if (String(insertErr.message).includes('UNIQUE constraint failed')) {
+          return res.status(409).json({ error: 'Username or Email is already registered.' });
+        }
+        throw insertErr;
+      }
+    }
 
     // Send email using Mailtrap Sandbox (Email Testing) API
     const mailtrapResponse = await fetch(
@@ -155,7 +175,7 @@ app.post('/api/signup', async (req, res) => {
       {
         method: 'POST',
         headers: {
-          'Api-Token': process.env.MAILTRAP_TOKEN,
+          'Authorization': `Bearer ${process.env.MAILTRAP_TOKEN}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -182,10 +202,13 @@ app.post('/api/signup', async (req, res) => {
       }
     );
 
+    const mailtrapData = await mailtrapResponse.json().catch(() => ({}));
+
     if (!mailtrapResponse.ok) {
-      const errorText = await mailtrapResponse.text();
-      console.error('Mailtrap Error:', errorText);
-      throw new Error('Failed to send verification email via Mailtrap');
+      console.error('Mailtrap Error:', mailtrapData);
+      return res.status(502).json({
+        error: 'Account created, but the verification email could not be sent right now. Please try again shortly.'
+      });
     }
 
     return res.status(201).json({
