@@ -16,9 +16,12 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false, // TLS
   auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS,
+    user: process.env.BREVO_USER, // b5483a001@smtp-brevo.com
+    pass: process.env.BREVO_PASS, // Your Brevo SMTP key
   },
+  connectionTimeout: 8000, // Timeout after 8s to prevent Vercel 500 crashes
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
 });
 
 // Direct HTTP SQL Executor for Turso
@@ -129,7 +132,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route (Creates unverified user & sends Brevo email)
+// Sign Up Route
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -157,7 +160,6 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Generate a 6-digit random code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     await executeSql(
@@ -165,9 +167,9 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Send code via Brevo SMTP (Nodemailer)
+    // Send email using Brevo via Nodemailer
     await transporter.sendMail({
-      from: `"Aurora Apparel" <${process.env.BREVO_USER}>`,
+      from: `"Aurora Apparel" <mhrafi551@gmail.com>`,
       to: cleanEmail,
       subject: 'Verify your Aurora Apparel Account',
       html: `
@@ -191,7 +193,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Verification Route (Checks 6-digit code)
+// Verification Route
 app.post('/api/verify', async (req, res) => {
   const { email, code } = req.body;
 
@@ -212,7 +214,6 @@ app.post('/api/verify', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired verification code.' });
     }
 
-    // Mark as verified and remove code
     await executeSql(
       'UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?',
       [cleanEmail]
@@ -248,7 +249,6 @@ app.post('/api/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Check if account is verified
     if (user.is_verified === 0 || user.is_verified === '0') {
       return res.status(403).json({
         error: 'Please verify your email address before logging in.',
