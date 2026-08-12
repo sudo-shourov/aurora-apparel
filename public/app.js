@@ -363,7 +363,7 @@ function updateUserUI() {
 
   if (currentUser) {
     authStatus.innerHTML = `
-      <span style="margin-right: 12px;">Welcome, <strong>${currentUser}</strong></span>
+      <span style="margin-right: 8px;">Welcome, <strong>${currentUser}</strong></span>
       <button class="btn-glass" onclick="handleLogout()">Sign Out</button>
     `;
   } else {

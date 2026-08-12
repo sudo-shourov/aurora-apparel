@@ -20,13 +20,17 @@
 
   <nav class="navbar glass-card">
     <a href="index.html" class="logo">AURA</a>
+    
     <div class="nav-links">
       <a href="collection.html">Collection</a>
-      <a href="cart.html" class="active cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
     </div>
-    <div class="auth-status" id="authStatus">
-      <button class="btn-glass" onclick="openAuthModal('login')">Sign In</button>
-      <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
+
+    <div class="nav-right">
+      <div class="auth-status" id="authStatus">
+        <button class="btn-glass" onclick="openAuthModal('login')">Sign In</button>
+        <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
+      </div>
+      <a href="cart.html" class="cart-icon-btn">🛒 Cart <span class="cart-count" id="navCartCount">0</span></a>
     </div>
   </nav>
 
