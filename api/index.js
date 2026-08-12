@@ -2,18 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const Brevo = require('@getbrevo/brevo');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
-
-// Initialize Brevo Transactional Emails API Client
-const apiInstance = new Brevo.TransactionalEmailsApi();
-const apiKey = apiInstance.authentications['apiKey'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
 
 // Direct HTTP SQL Executor for Turso
 async function executeSql(sql, args = []) {
@@ -24,7 +18,6 @@ async function executeSql(sql, args = []) {
     throw new Error('Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN in environment variables.');
   }
 
-  // Ensure HTTPS format for HTTP API calls
   let baseUrl = rawUrl.replace(/^libsql:\/\//, 'https://');
   if (!baseUrl.startsWith('https://')) {
     baseUrl = `https://${baseUrl}`;
@@ -68,7 +61,6 @@ async function executeSql(sql, args = []) {
     throw new Error(errorMsg);
   }
 
-  // Format rows into plain JS objects
   const columns = result.cols.map(col => col.name);
   const rows = result.rows.map(row => {
     const obj = {};
@@ -101,7 +93,6 @@ async function ensureTableExists() {
     )
   `);
 
-  // Migration step: Add columns to existing database if created without them
   try {
     await executeSql('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;');
   } catch (err) { /* column already exists */ }
@@ -123,7 +114,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route (Creates unverified user & sends email via Brevo API)
+// Sign Up Route (Creates unverified user & sends email via Brevo REST API)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -151,7 +142,6 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Generate a 6-digit random code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     await executeSql(
@@ -159,21 +149,35 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Send email using Brevo HTTP REST API
-    const sendSmtpEmail = new Brevo.SendSmtpEmail();
-    sendSmtpEmail.subject = 'Verify your Aurora Apparel Account';
-    sendSmtpEmail.htmlContent = `
-      <div style="font-family: sans-serif; padding: 20px;">
-        <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
-        <p>Your 6-digit verification code is:</p>
-        <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
-        <p>Please enter this code on the website to verify your account.</p>
-      </div>
-    `;
-    sendSmtpEmail.sender = { name: 'Aurora Apparel', email: 'sirajul.alam.shourov@gmail.com' };
-    sendSmtpEmail.to = [{ email: cleanEmail }];
+    // Direct HTTP fetch call to Brevo API (No SDK required)
+    const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { name: 'Aurora Apparel', email: 'sirajul.alam.shourov@gmail.com' },
+        to: [{ email: cleanEmail }],
+        subject: 'Verify your Aurora Apparel Account',
+        htmlContent: `
+          <div style="font-family: sans-serif; padding: 20px;">
+            <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
+            <p>Your 6-digit verification code is:</p>
+            <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
+            <p>Please enter this code on the website to verify your account.</p>
+          </div>
+        `
+      })
+    });
 
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const brevoData = await brevoResponse.json();
+
+    if (!brevoResponse.ok) {
+      console.error('Brevo API Error:', brevoData);
+      throw new Error(brevoData.message || 'Failed to send verification email via Brevo');
+    }
 
     return res.status(201).json({
       message: 'Account created! Please check your email for your 6-digit verification code.',
@@ -207,7 +211,6 @@ app.post('/api/verify', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired verification code.' });
     }
 
-    // Mark as verified and remove code
     await executeSql(
       'UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?',
       [cleanEmail]
@@ -243,7 +246,6 @@ app.post('/api/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Check if account is verified
     if (user.is_verified === 0 || user.is_verified === '0') {
       return res.status(403).json({
         error: 'Please verify your email address before logging in.',
