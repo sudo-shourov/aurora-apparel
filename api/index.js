@@ -2,14 +2,24 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Brevo SMTP Transporter Configuration
+const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // TLS
+  auth: {
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS,
+  },
+});
 
 // Direct HTTP SQL Executor for Turso
 async function executeSql(sql, args = []) {
@@ -80,7 +90,7 @@ async function executeSql(sql, args = []) {
   };
 }
 
-// Ensure table exists (creates is_verified & verification_code columns)
+// Ensure table exists
 let tableInitialized = false;
 async function ensureTableExists() {
   if (tableInitialized) return;
@@ -119,7 +129,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route (Creates unverified user & sends email)
+// Sign Up Route (Creates unverified user & sends Brevo email)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -155,9 +165,9 @@ app.post('/api/signup', async (req, res) => {
       [cleanUsername, cleanEmail, hashedPassword, verificationCode]
     );
 
-    // Send code via Resend
-    await resend.emails.send({
-      from: 'Aurora Apparel <onboarding@resend.dev>',
+    // Send code via Brevo SMTP (Nodemailer)
+    await transporter.sendMail({
+      from: `"Aurora Apparel" <${process.env.BREVO_USER}>`,
       to: cleanEmail,
       subject: 'Verify your Aurora Apparel Account',
       html: `
