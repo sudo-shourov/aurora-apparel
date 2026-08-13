@@ -103,5 +103,108 @@ function removeFromCart(id) {
   updateCartUI();
 }
 
+// ==========================================
+// AUTHENTICATION LOGIC (Sign Up & Sign In)
+// ==========================================
+
+function setupAuthHandlers() {
+  const signupForm = document.getElementById('signupForm');
+  const loginForm = document.getElementById('loginForm');
+
+  // Handle Sign Up Form
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Prevents page reload
+
+      const username = document.getElementById('signupUsername')?.value;
+      const email = document.getElementById('signupEmail')?.value;
+      const password = document.getElementById('signupPassword')?.value;
+
+      try {
+        const response = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.error || 'Signup failed.');
+          return;
+        }
+
+        alert(data.message || 'Account created successfully!');
+        if (typeof closeAuthModal === 'function') closeAuthModal();
+        if (typeof switchTab === 'function') switchTab('login');
+      } catch (err) {
+        console.error('Signup error:', err);
+        alert('Network error. Please try again.');
+      }
+    });
+  }
+
+  // Handle Sign In Form
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Prevents page reload
+
+      const username = document.getElementById('loginUsername')?.value;
+      const password = document.getElementById('loginPassword')?.value;
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.error || 'Login failed.');
+          return;
+        }
+
+        alert('Logged in successfully!');
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('authUser', data.username);
+
+        if (typeof closeAuthModal === 'function') closeAuthModal();
+        checkLoginStatus();
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('Network error. Please try again.');
+      }
+    });
+  }
+
+  checkLoginStatus();
+}
+
+// Update Nav UI when user is logged in
+function checkLoginStatus() {
+  const user = localStorage.getItem('authUser');
+  const authStatus = document.getElementById('authStatus');
+
+  if (user && authStatus) {
+    authStatus.innerHTML = `
+      <span class="user-greeting" style="color: white; margin-right: 12px; font-weight: 500;">Welcome, <strong>${user}</strong></span>
+      <button class="btn-glass" onclick="logout()">Logout</button>
+      <a href="collection.html" class="btn-glass">Collection</a>
+    `;
+  }
+}
+
+// Logout helper function
+function logout() {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('authUser');
+  location.reload();
+}
+
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', updateCartUI);
+document.addEventListener('DOMContentLoaded', () => {
+  updateCartUI();
+  setupAuthHandlers();
+});

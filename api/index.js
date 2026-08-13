@@ -2,12 +2,17 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static frontend assets (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname)));
+
 const JWT_SECRET = process.env.JWT_SECRET || 'aurora-super-secret-key-2026';
+const PORT = process.env.PORT || 3000;
 
 // Direct HTTP SQL Executor for Turso
 async function executeSql(sql, args = []) {
@@ -115,7 +120,7 @@ app.post('/api/signup', async (req, res) => {
   }
 
   if (!validatePassword(password)) {
-    return res.status(400).json({ error: 'Password rules not met.' });
+    return res.status(400).json({ error: 'Password rules not met (Must be at least 8 chars, contain upper/lower case, a number, and a symbol).' });
   }
 
   try {
@@ -202,5 +207,16 @@ app.post('/api/login', async (req, res) => {
     return res.status(500).json({ error: error.message || 'Internal server error.' });
   }
 });
+
+// Fallback to serve index.html for root requests
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
