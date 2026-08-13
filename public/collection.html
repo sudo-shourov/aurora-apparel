@@ -225,11 +225,11 @@
     </div>
   </div>
 
-  <!-- Cart Drawer Overlay -->
+  <!-- Glassmorphism Cart Drawer Overlay & Panel -->
   <div class="cart-drawer-overlay" id="cartDrawerOverlay" onclick="closeCartDrawer()"></div>
-  <div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer glass-card" id="cartDrawer">
     <div class="cart-header">
-      <h3>Your Shopping Cart</h3>
+      <h3>Your Cart</h3>
       <button class="close-btn" onclick="closeCartDrawer()">&times;</button>
     </div>
     <div class="cart-body" id="cartItemsContainer">
@@ -240,11 +240,11 @@
         <span>Total:</span>
         <span id="cartTotal">$0</span>
       </div>
-      <button class="btn-primary full-width">Checkout</button>
+      <button class="btn-primary full-width" onclick="proceedToCheckout()">Proceed to Checkout</button>
     </div>
   </div>
 
-  <!-- Three.js Import Map (REQUIRED for bg-nebula.js module imports) -->
+  <!-- Three.js Import Map -->
   <script type="importmap">
   {
     "imports": {
@@ -310,6 +310,10 @@
         signupTab.classList.add('active');
         loginTab.classList.remove('active');
       }
+    }
+
+    function proceedToCheckout() {
+      window.location.href = 'checkout.html';
     }
   </script>
 </body>

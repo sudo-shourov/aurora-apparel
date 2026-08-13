@@ -1,113 +1,60 @@
-let cart = [];
+// Function to handle adding items and saving to LocalStorage
+function addToCart(id, name, price, image) {
+  let cart = JSON.parse(localStorage.getItem('auraCart')) || [];
+  const existing = cart.find(item => item.id === id);
 
-// Scroll tracking for dynamic background shifts
-window.addEventListener('scroll', () => {
-  if (!window.bgState) return;
-  const catalogEl = document.getElementById('catalog');
-  if (!catalogEl) return;
-  
-  const rect = catalogEl.getBoundingClientRect();
-  if (rect.top < window.innerHeight && rect.bottom >= 0) {
-    window.bgState.targetScale = 85;
-    window.bgState.targetTwist = 2.4;
-    window.bgState.targetChaos = 1.1;
+  if (existing) {
+    existing.quantity += 1;
   } else {
-    window.bgState.targetScale = 60;
-    window.bgState.targetTwist = 1.2;
-    window.bgState.targetChaos = 0.6;
+    cart.push({ id, name, price, image, quantity: 1 });
   }
-});
 
-// Cart Drawer Handlers
-window.openCartDrawer = function() {
-  document.getElementById('cartDrawer').classList.add('active');
-  document.getElementById('cartDrawerOverlay').classList.add('active');
-  
-  if (window.bgState) {
-    window.bgState.targetCamX = -25;
-    window.bgState.targetChaos = 1.4;
-  }
-};
-
-window.closeCartDrawer = function() {
-  document.getElementById('cartDrawer').classList.remove('active');
-  document.getElementById('cartDrawerOverlay').classList.remove('active');
-  
-  if (window.bgState) {
-    window.bgState.targetCamX = 0;
-    window.bgState.targetChaos = 0.6;
-  }
-};
-
-window.addToCart = function(title, price) {
-  cart.push({ title, price });
+  localStorage.setItem('auraCart', JSON.stringify(cart));
   updateCartUI();
-  openCartDrawer();
-};
-
-window.removeFromCart = function(index) {
-  cart.splice(index, 1);
-  updateCartUI();
-};
-
-function updateCartUI() {
-  const cartCountEl = document.getElementById('navCartCount');
-  const itemsContainer = document.getElementById('cartItemsContainer');
-  const totalEl = document.getElementById('cartTotal');
-  
-  if (cartCountEl) cartCountEl.textContent = cart.length;
-
-  if (cart.length === 0) {
-    if (itemsContainer) itemsContainer.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
-    if (totalEl) totalEl.textContent = '$0';
-    return;
+  if (typeof openCartDrawer === 'function') {
+    openCartDrawer();
   }
-
-  let total = 0;
-  if (itemsContainer) itemsContainer.innerHTML = '';
-  
-  cart.forEach((item, index) => {
-    total += item.price;
-    const itemEl = document.createElement('div');
-    itemEl.className = 'cart-item';
-    itemEl.innerHTML = `
-      <div>
-        <strong>${item.title}</strong>
-        <div>$${item.price}</div>
-      </div>
-      <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:18px;">&times;</button>
-    `;
-    if (itemsContainer) itemsContainer.appendChild(itemEl);
-  });
-
-  if (totalEl) totalEl.textContent = `$${total.toLocaleString()}`;
 }
 
-// Modal Handlers
-window.openAuthModal = function(mode) {
-  document.getElementById('authModal').classList.add('active');
-  switchTab(mode);
-};
+function updateCartUI() {
+  const cart = JSON.parse(localStorage.getItem('auraCart')) || [];
+  const container = document.getElementById('cartItemsContainer');
+  const cartCount = document.getElementById('navCartCount');
+  const cartTotal = document.getElementById('cartTotal');
 
-window.closeAuthModal = function() {
-  document.getElementById('authModal').classList.remove('active');
-};
+  if (!container) return;
 
-window.switchTab = function(tab) {
-  const loginForm = document.getElementById('loginForm');
-  const signupForm = document.getElementById('signupForm');
-  const loginTab = document.getElementById('loginTab');
-  const signupTab = document.getElementById('signupTab');
+  let totalCount = 0;
+  let totalPrice = 0;
 
-  if (tab === 'login') {
-    if (loginForm) loginForm.classList.remove('hidden');
-    if (signupForm) signupForm.classList.add('hidden');
-    if (loginTab) loginTab.classList.add('active');
-    if (signupTab) signupTab.classList.remove('active');
+  if (cart.length === 0) {
+    container.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
   } else {
-    if (signupForm) signupForm.classList.remove('hidden');
-    if (loginForm) loginForm.classList.add('hidden');
-    if (signupTab) signupTab.classList.add('active');
-    if (loginTab) loginTab.classList.remove('active');
+    container.innerHTML = cart.map(item => {
+      totalCount += item.quantity;
+      totalPrice += item.price * item.quantity;
+      return `
+        <div class="cart-item-row">
+          <img src="${item.image}" alt="${item.name}" />
+          <div class="cart-item-details">
+            <h4>${item.name}</h4>
+            <p>$${item.price.toLocaleString()} × ${item.quantity}</p>
+          </div>
+          <button class="btn-glass" onclick="removeFromCart(${item.id})">×</button>
+        </div>
+      `;
+    }).join('');
   }
-};
+
+  if (cartCount) cartCount.innerText = totalCount;
+  if (cartTotal) cartTotal.innerText = `$${totalPrice.toLocaleString()}`;
+}
+
+function removeFromCart(id) {
+  let cart = JSON.parse(localStorage.getItem('auraCart')) || [];
+  cart = cart.filter(item => item.id !== id);
+  localStorage.setItem('auraCart', JSON.stringify(cart));
+  updateCartUI();
+}
+
+document.addEventListener('DOMContentLoaded', updateCartUI);
