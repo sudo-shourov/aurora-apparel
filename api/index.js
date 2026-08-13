@@ -87,18 +87,10 @@ async function ensureTableExists() {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      is_verified INTEGER DEFAULT 0,
-      verification_code TEXT,
+      is_verified INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  try {
-    await executeSql('ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0;');
-  } catch (err) { /* column already exists */ }
-  try {
-    await executeSql('ALTER TABLE users ADD COLUMN verification_code TEXT;');
-  } catch (err) { /* column already exists */ }
 
   tableInitialized = true;
 }
@@ -114,7 +106,7 @@ const validatePassword = (password) => {
   );
 };
 
-// Sign Up Route (Creates unverified user & sends email via Mailtrap Sandbox API)
+// Sign Up Route (Creates directly verified users)
 app.post('/api/signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -132,125 +124,35 @@ app.post('/api/signup', async (req, res) => {
     const cleanUsername = username.trim().toLowerCase();
     const cleanEmail = email.trim().toLowerCase();
 
+    // Check if account already exists
     const existingUser = await executeSql(
-      'SELECT id, is_verified FROM users WHERE username = ? OR email = ?',
+      'SELECT id FROM users WHERE username = ? OR email = ?',
       [cleanUsername, cleanEmail]
     );
 
-    const alreadyVerified = existingUser.rows.length > 0 &&
-      (existingUser.rows[0].is_verified === 1 || existingUser.rows[0].is_verified === '1');
-
-    // Only a fully verified account blocks a new signup. An unverified
-    // leftover row from a previous failed attempt gets refreshed instead.
-    if (alreadyVerified) {
+    if (existingUser.rows.length > 0) {
       return res.status(409).json({ error: 'Username or Email is already registered.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    if (existingUser.rows.length > 0) {
+    try {
       await executeSql(
-        'UPDATE users SET username = ?, password = ?, verification_code = ? WHERE email = ?',
-        [cleanUsername, hashedPassword, verificationCode, cleanEmail]
+        'INSERT INTO users (username, email, password, is_verified) VALUES (?, ?, ?, 1)',
+        [cleanUsername, cleanEmail, hashedPassword]
       );
-    } else {
-      try {
-        await executeSql(
-          'INSERT INTO users (username, email, password, is_verified, verification_code) VALUES (?, ?, ?, 0, ?)',
-          [cleanUsername, cleanEmail, hashedPassword, verificationCode]
-        );
-      } catch (insertErr) {
-        // Race condition: two requests passed the check above at the same time.
-        if (String(insertErr.message).includes('UNIQUE constraint failed')) {
-          return res.status(409).json({ error: 'Username or Email is already registered.' });
-        }
-        throw insertErr;
+    } catch (insertErr) {
+      if (String(insertErr.message).includes('UNIQUE constraint failed')) {
+        return res.status(409).json({ error: 'Username or Email is already registered.' });
       }
-    }
-
-    // Send email using Mailtrap Sandbox (Email Testing) API
-    const mailtrapResponse = await fetch(
-      `https://sandbox.api.mailtrap.io/api/send/${process.env.MAILTRAP_INBOX_ID}`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.MAILTRAP_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: {
-            email: 'sirajul.alam.shourov@gmail.com',
-            name: 'Aurora Apparel'
-          },
-          to: [
-            {
-              email: cleanEmail,
-              name: cleanUsername
-            }
-          ],
-          subject: 'Verify your Aurora Apparel Account',
-          html: `
-            <div style="font-family: sans-serif; padding: 20px;">
-              <h2>Welcome to Aurora Apparel, ${cleanUsername}!</h2>
-              <p>Your 6-digit verification code is:</p>
-              <h1 style="background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 4px;">${verificationCode}</h1>
-              <p>Please enter this code on the website to verify your account.</p>
-            </div>
-          `
-        })
-      }
-    );
-
-    const mailtrapData = await mailtrapResponse.json().catch(() => ({}));
-
-    if (!mailtrapResponse.ok) {
-      console.error('Mailtrap Error:', mailtrapData);
-      return res.status(502).json({
-        error: 'Account created, but the verification email could not be sent right now. Please try again shortly.'
-      });
+      throw insertErr;
     }
 
     return res.status(201).json({
-      message: 'Account created! Please check your email for your 6-digit verification code.',
-      email: cleanEmail,
-      requiresVerification: true
+      message: 'Account created successfully! You can now log in.'
     });
   } catch (error) {
     console.error('Signup error:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error.' });
-  }
-});
-
-// Verification Route (Checks 6-digit code)
-app.post('/api/verify', async (req, res) => {
-  const { email, code } = req.body;
-
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Email and verification code are required.' });
-  }
-
-  try {
-    await ensureTableExists();
-    const cleanEmail = email.trim().toLowerCase();
-
-    const result = await executeSql(
-      'SELECT * FROM users WHERE email = ? AND verification_code = ?',
-      [cleanEmail, code.trim()]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid or expired verification code.' });
-    }
-
-    await executeSql(
-      'UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = ?',
-      [cleanEmail]
-    );
-
-    return res.json({ message: 'Account verified successfully! You can now log in.' });
-  } catch (error) {
-    console.error('Verify error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error.' });
   }
 });
@@ -277,14 +179,6 @@ app.post('/api/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-
-    if (user.is_verified === 0 || user.is_verified === '0') {
-      return res.status(403).json({
-        error: 'Please verify your email address before logging in.',
-        email: user.email,
-        requiresVerification: true
-      });
-    }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
