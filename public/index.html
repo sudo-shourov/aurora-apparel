@@ -26,17 +26,43 @@
   <div id="canvas-container"></div>
 
   <!-- Navigation -->
-  <nav class="navbar glass-card">
+  <nav class="navbar glass-card" id="navbar">
     <a href="index.html" class="logo">AURORA</a>
 
+    <!-- Desktop Navigation Links -->
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="collection.html">Collection</a>
+    </div>
+
+    <!-- Desktop Right Controls -->
     <div class="nav-right">
       <div class="auth-status" id="authStatus">
         <button class="btn-primary" onclick="openAuthModal('signup')">Create Account</button>
-        <a href="collection.html" class="btn-glass">Collection</a>
       </div>
       <button class="cart-icon-btn" onclick="openCartDrawer()">🛒 Cart <span class="cart-count" id="navCartCount">0</span></button>
     </div>
+
+    <!-- Mobile Hamburger Menu Button (3 Lines) -->
+    <button class="menu-toggle" id="menuToggle" aria-label="Open Menu" onclick="toggleMobileMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </nav>
+
+  <!-- Mobile Fullscreen Navigation Overlay -->
+  <div class="mobile-menu-overlay" id="mobileMenuOverlay">
+    <button class="close-btn" onclick="closeMobileMenu()">&times;</button>
+    <div class="mobile-menu-content">
+      <a href="index.html" onclick="closeMobileMenu()">Home</a>
+      <a href="collection.html" onclick="closeMobileMenu()">Collection</a>
+      <button class="btn-primary full-width" onclick="closeMobileMenu(); openAuthModal('signup');">Create Account</button>
+      <button class="cart-icon-btn full-width" onclick="closeMobileMenu(); openCartDrawer();" style="justify-content: center; margin-top: 10px;">
+        🛒 Cart <span class="cart-count" id="mobileCartCount">0</span>
+      </button>
+    </div>
+  </div>
 
   <!-- Hero Section -->
   <header class="hero">
@@ -159,8 +185,9 @@
     </div>
   </div>
 
-  <!-- Modal and Cart Drawer Helper Scripts -->
+  <!-- UI Control Scripts -->
   <script>
+    // Cart Drawer Controls
     function openCartDrawer() {
       document.getElementById('cartDrawer').classList.add('active');
       document.getElementById('cartDrawerOverlay').classList.add('active');
@@ -171,6 +198,7 @@
       document.getElementById('cartDrawerOverlay').classList.remove('active');
     }
 
+    // Auth Modal Controls
     function openAuthModal(mode) {
       document.getElementById('authModal').classList.add('active');
       switchTab(mode);
@@ -202,6 +230,31 @@
     function proceedToCheckout() {
       window.location.href = 'checkout.html';
     }
+
+    // Mobile Menu Controls
+    function toggleMobileMenu() {
+      document.getElementById('mobileMenuOverlay').classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+      document.getElementById('mobileMenuOverlay').classList.remove('active');
+    }
+
+    // Hide Navbar on Scroll Down, Reveal on Scroll Up
+    let lastScrollTop = 0;
+    const navbar = document.getElementById('navbar');
+
+    window.addEventListener('scroll', () => {
+      let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      
+      if (scrollTop > lastScrollTop && scrollTop > 60) {
+        navbar.classList.add('navbar--hidden');
+      } else {
+        navbar.classList.remove('navbar--hidden');
+      }
+      
+      lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    });
   </script>
 
   <!-- Application Logic & Background Initialization -->
@@ -212,6 +265,3 @@
   </script>
 </body>
 </html>
-
-
-

@@ -37,6 +37,7 @@ function updateCartUI() {
   const cart = getCart();
   const container = document.getElementById('cartItemsContainer');
   const cartCount = document.getElementById('navCartCount');
+  const mobileCartCount = document.getElementById('mobileCartCount');
   const cartTotal = document.getElementById('cartTotal');
 
   let totalCount = 0;
@@ -48,6 +49,7 @@ function updateCartUI() {
   });
 
   if (cartCount) cartCount.innerText = totalCount;
+  if (mobileCartCount) mobileCartCount.innerText = totalCount;
   if (cartTotal) cartTotal.innerText = `$${totalPrice.toLocaleString()}`;
 
   if (container) {
@@ -152,8 +154,9 @@ function switchTab(tabName) {
 }
 
 // Modal Control Helpers
-function openAuthModal() {
+function openAuthModal(mode) {
   document.getElementById('authModal')?.classList.add('active');
+  if (mode) switchTab(mode);
 }
 
 function closeAuthModal() {
@@ -267,7 +270,3 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   setupAuthHandlers();
 });
-
-
-
-
