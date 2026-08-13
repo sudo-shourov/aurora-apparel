@@ -267,3 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   setupAuthHandlers();
 });
+
+
+
+
