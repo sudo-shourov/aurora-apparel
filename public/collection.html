@@ -244,6 +244,16 @@
     </div>
   </div>
 
+  <!-- Three.js Import Map (REQUIRED for bg-nebula.js module imports) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
   <!-- Initialize Background Module -->
   <script type="module">
     import { initBackground } from './bg-nebula.js';
@@ -258,7 +268,6 @@
       document.getElementById('cartDrawer').classList.add('active');
       document.getElementById('cartDrawerOverlay').classList.add('active');
       
-      // Interactively manipulate background state
       if (window.bgState) {
         window.bgState.targetCamX = -25;
         window.bgState.targetChaos = 1.4;
