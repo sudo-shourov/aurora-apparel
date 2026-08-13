@@ -517,7 +517,9 @@ h3 {
   margin-top: 40px;
 }
 
-.hidden { display: none !important; }
+.hidden {
+  display: none !important;
+}
 
 /* Checkout Layout Extensions */
 .checkout-page {
@@ -538,7 +540,8 @@ h3 {
   }
 }
 
-.order-summary, .checkout-form-container {
+.order-summary,
+.checkout-form-container {
   padding: 32px;
 }
 
