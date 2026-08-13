@@ -10,210 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Montserrat:wght@500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="style.css" />
-
-  <style>
-    /* WebGL Canvas Background Container */
-    #canvas-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    /* Cart Drawer Styles */
-    .cart-drawer-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 999;
-    }
-
-    .cart-drawer-overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .cart-drawer {
-      position: fixed;
-      top: 0;
-      right: -400px;
-      width: 100%;
-      max-width: 380px;
-      height: 100vh;
-      background: var(--dark-card-bg, #0d0a18);
-      border-left: 1px solid var(--glass-border, rgba(255, 255, 255, 0.18));
-      box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      padding: 24px;
-    }
-
-    .cart-drawer.active {
-      right: 0;
-    }
-
-    .cart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.18));
-      padding-bottom: 16px;
-    }
-
-    .cart-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 0;
-    }
-
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    .cart-footer {
-      border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.18));
-      padding-top: 16px;
-    }
-
-    .cart-total {
-      display: flex;
-      justify-content: space-between;
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    .empty-msg {
-      color: var(--text-muted, rgba(255, 255, 255, 0.75));
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    /* Modal Styles */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 1000;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .modal-content {
-      width: 90%;
-      max-width: 440px;
-      padding: 36px;
-      position: relative;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 16px;
-      right: 20px;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    .tab-switcher {
-      display: flex;
-      margin-bottom: 24px;
-      border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.18));
-    }
-
-    .tab-switcher button {
-      flex: 1;
-      background: none;
-      border: none;
-      color: var(--text-muted, rgba(255, 255, 255, 0.75));
-      padding: 12px;
-      font-family: var(--font-product, sans-serif);
-      font-size: 16px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-    }
-
-    .tab-switcher button.active {
-      color: var(--text-main, #fff);
-      border-bottom-color: var(--accent-gold, #e2c08d);
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
-      color: var(--text-muted, rgba(255, 255, 255, 0.75));
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px 16px;
-      border-radius: 8px;
-      border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.18));
-      background: rgba(0, 0, 0, 0.25);
-      color: white;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .form-group input:focus {
-      border-color: var(--accent-gold, #e2c08d);
-    }
-
-    .hidden { display: none !important; }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
 </head>
 <body>
 
-  <!-- WebGL Canvas Container -->
+  <!-- WebGL Background Container -->
   <div id="canvas-container"></div>
 
+  <!-- Navigation Bar -->
   <nav class="navbar glass-card">
     <a href="index.html" class="logo">AURA</a>
     
@@ -230,11 +33,12 @@
     </div>
   </nav>
 
+  <!-- Product Grid Section -->
   <section class="catalog-section" id="catalog">
     <h2 class="section-title">Full Collection</h2>
     <div class="product-grid">
       
-      <!-- Item 1 (Female Model) -->
+      <!-- 1. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" alt="Aurora Silk Trench Coat">
@@ -246,7 +50,7 @@
         </div>
       </div>
 
-      <!-- Item 2 (Female Model) -->
+      <!-- 2. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80" alt="Bespoke Velvet Blazer">
@@ -258,7 +62,7 @@
         </div>
       </div>
 
-      <!-- Item 3 (Female Model) -->
+      <!-- 3. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80" alt="Ethereal Evening Gown">
@@ -270,7 +74,7 @@
         </div>
       </div>
 
-      <!-- Item 4 (Female Model) -->
+      <!-- 4. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80" alt="Monochrome Wool Overcoat">
@@ -282,7 +86,7 @@
         </div>
       </div>
 
-      <!-- Item 5 (Female Model) -->
+      <!-- 5. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1550614000-4895a10e1bfd?auto=format&fit=crop&w=800&q=80" alt="Obsidian Biker Jacket">
@@ -294,7 +98,7 @@
         </div>
       </div>
 
-      <!-- Item 6 (Female Model) -->
+      <!-- 6. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" alt="Midnight Silk Trousers">
@@ -306,7 +110,7 @@
         </div>
       </div>
 
-      <!-- Item 7 (Male Model - Tailored Suit) -->
+      <!-- 7. Male Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80" alt="Bespoke Charcoal Suit">
@@ -318,7 +122,7 @@
         </div>
       </div>
 
-      <!-- Item 8 (Male Model - Leather Jacket) -->
+      <!-- 8. Male Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1480455624313-e29b44bbfde1?auto=format&fit=crop&w=800&q=80" alt="Vintage Moto Leather Coat">
@@ -330,7 +134,7 @@
         </div>
       </div>
 
-      <!-- Item 9 (Male Model - Streetwise Overcoat) -->
+      <!-- 9. Male Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=800&q=80" alt="Minimalist Cashmere Coat">
@@ -342,7 +146,7 @@
         </div>
       </div>
 
-      <!-- Item 10 (Female Model - Emerald Silk) -->
+      <!-- 10. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80" alt="Emerald Silk Drape Gown">
@@ -354,7 +158,7 @@
         </div>
       </div>
 
-      <!-- Item 11 (Male Model - Casual Luxury) -->
+      <!-- 11. Male Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=800&q=80" alt="Structured Tuxedo Jacket">
@@ -366,7 +170,7 @@
         </div>
       </div>
 
-      <!-- Item 12 (Female Model - High Fashion) -->
+      <!-- 12. Female Model -->
       <div class="product-card glass-card">
         <div class="img-wrapper">
           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" alt="Sculpted Vanguard Dress">
@@ -421,7 +225,7 @@
     </div>
   </div>
 
-  <!-- Cart Drawer -->
+  <!-- Cart Drawer Overlay -->
   <div class="cart-drawer-overlay" id="cartDrawerOverlay" onclick="closeCartDrawer()"></div>
   <div class="cart-drawer" id="cartDrawer">
     <div class="cart-header">
@@ -440,139 +244,13 @@
     </div>
   </div>
 
-  <!-- WebGL Particle Background -->
+  <!-- Initialize Background Module -->
   <script type="module">
-    import * as THREE from 'three';
-    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-
-    const COUNT = 45000;
-    const SPEED_MULT = 0.35;
-    const container = document.getElementById('canvas-container');
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.008);
-
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.set(0, 0, 100);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
-
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.strength = 1.8; 
-    bloomPass.radius = 0.4; 
-    bloomPass.threshold = 0.05;
-    composer.addPass(bloomPass);
-
-    const dummy = new THREE.Object3D();
-    const color = new THREE.Color();
-    const target = new THREE.Vector3();
-
-    const geometry = new THREE.ConeGeometry(0.1, 0.5, 4).rotateX(Math.PI / 2);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00aaff });
-
-    const instancedMesh = new THREE.InstancedMesh(geometry, material, COUNT);
-    instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    scene.add(instancedMesh);
-
-    const positions = [];
-    for(let i = 0; i < COUNT; i++) {
-      positions.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
-      instancedMesh.setColorAt(i, color.setHex(0x00ff88));
-    }
-
-    // Default Background State set to expanded Collection mode
-    window.bgState = {
-      scale: 85,
-      targetScale: 85,
-      twist: 2.4,
-      targetTwist: 2.4,
-      chaos: 1.1,
-      targetChaos: 1.1,
-      camX: 0,
-      targetCamX: 0
-    };
-
-    const mouse = new THREE.Vector2(0, 0);
-    const targetRotation = new THREE.Vector2(0, 0);
-
-    window.addEventListener('mousemove', (e) => {
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    });
-
-    const clock = new THREE.Clock();
-
-    function animate() {
-      requestAnimationFrame(animate);
-      const time = clock.getElapsedTime() * SPEED_MULT;
-
-      const state = window.bgState;
-      state.scale += (state.targetScale - state.scale) * 0.05;
-      state.twist += (state.targetTwist - state.twist) * 0.05;
-      state.chaos += (state.targetChaos - state.chaos) * 0.05;
-      state.camX += (state.targetCamX - state.camX) * 0.05;
-
-      camera.position.x = state.camX;
-
-      targetRotation.x += (mouse.y * 0.3 - targetRotation.x) * 0.03;
-      targetRotation.y += (mouse.x * 0.3 - targetRotation.y) * 0.03;
-
-      instancedMesh.rotation.x = targetRotation.x;
-      instancedMesh.rotation.y = targetRotation.y;
-
-      const count = COUNT;
-      const golden = 1.618033988749895;
-
-      for(let i = 0; i < COUNT; i++) {
-        const theta = i * golden * 6.283185307;
-        const phi = Math.acos(1 - 2 * (i + 0.5) / count);
-        const radius = state.scale * (0.8 + 0.3 * Math.sin(time * 0.5 + i * 0.001));
-        const rWarp = radius + state.chaos * 10 * Math.sin(theta * 3 + phi * 2 + time * 0.7);
-        const thetaWarp = theta + state.twist * Math.sin(phi * 4 + time * 0.4);
-        
-        const x = rWarp * Math.sin(phi) * Math.cos(thetaWarp);
-        const y = rWarp * Math.cos(phi);
-        const z = rWarp * Math.sin(phi) * Math.sin(thetaWarp);
-        
-        const gx = x + state.chaos * 2 * Math.sin(y * 0.1 + time * 0.5);
-        const gy = y + state.chaos * 1.5 * Math.sin(x * 0.08 + z * 0.06 + time * 0.3);
-        const gz = z + state.chaos * 2 * Math.cos(x * 0.07 + y * 0.09 + time * 0.4);
-        
-        target.set(gx, gy, gz);
-
-        const hue = (0.6 + 0.4 * Math.sin(theta * 0.5 + phi * 0.3 + time * 0.05)) % 1.0;
-        const lightness = 0.4 + 0.4 * (0.5 + 0.5 * Math.sin(time * 0.2 + i * 0.0005));
-        color.setHSL(hue, 0.85, Math.min(1, Math.max(0.2, lightness)));
-
-        positions[i].lerp(target, 0.1);
-        dummy.position.copy(positions[i]);
-        dummy.updateMatrix();
-        instancedMesh.setMatrixAt(i, dummy.matrix);
-        instancedMesh.setColorAt(i, color);
-      }
-
-      instancedMesh.instanceMatrix.needsUpdate = true;
-      if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
-
-      composer.render();
-    }
-    animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      composer.setSize(window.innerWidth, window.innerHeight);
-    });
+    import { initBackground } from './bg-nebula.js';
+    initBackground('canvas-container');
   </script>
 
+  <!-- Application Logic -->
   <script src="app.js"></script>
   
   <script>
@@ -580,6 +258,7 @@
       document.getElementById('cartDrawer').classList.add('active');
       document.getElementById('cartDrawerOverlay').classList.add('active');
       
+      // Interactively manipulate background state
       if (window.bgState) {
         window.bgState.targetCamX = -25;
         window.bgState.targetChaos = 1.4;
