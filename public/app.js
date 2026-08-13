@@ -10,7 +10,7 @@ function getCart() {
 // Save cart data safely
 function saveCart(cart) {
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-  localStorage.setItem('auraCart', JSON.stringify(cart)); // Sync legacy key
+  localStorage.setItem('auraCart', JSON.stringify(cart));
 }
 
 // Add item to cart and open drawer
@@ -47,11 +47,9 @@ function updateCartUI() {
     totalPrice += item.price * item.quantity;
   });
 
-  // Update navigation count and total price labels
   if (cartCount) cartCount.innerText = totalCount;
   if (cartTotal) cartTotal.innerText = `$${totalPrice.toLocaleString()}`;
 
-  // Update drawer contents if container exists
   if (container) {
     if (cart.length === 0) {
       container.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
@@ -74,7 +72,6 @@ function updateCartUI() {
     }
   }
 
-  // Refresh checkout page summary if present
   if (typeof renderCheckoutSummary === 'function') {
     renderCheckoutSummary();
   }
@@ -104,6 +101,66 @@ function removeFromCart(id) {
 }
 
 // ==========================================
+// CUSTOM GLASS TOAST NOTIFICATIONS
+// ==========================================
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `glass-toast ${type}`;
+  
+  const icon = type === 'error' ? '✕' : type === 'success' ? '✓' : 'ℹ';
+  toast.innerHTML = `
+    <span class="toast-icon">${icon}</span>
+    <span class="toast-message">${message}</span>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => toast.classList.add('show'), 10);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 3500);
+}
+
+// Tab Switcher Functionality
+function switchTab(tabName) {
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+  const loginTab = document.getElementById('loginTab');
+  const signupTab = document.getElementById('signupTab');
+
+  if (tabName === 'login') {
+    loginForm?.classList.remove('hidden');
+    signupForm?.classList.add('hidden');
+    loginTab?.classList.add('active');
+    signupTab?.classList.remove('active');
+  } else {
+    signupForm?.classList.remove('hidden');
+    loginForm?.classList.add('hidden');
+    signupTab?.classList.add('active');
+    loginTab?.classList.remove('active');
+  }
+}
+
+// Modal Control Helpers
+function openAuthModal() {
+  document.getElementById('authModal')?.classList.add('active');
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal')?.classList.remove('active');
+}
+
+// ==========================================
 // AUTHENTICATION LOGIC (Sign Up & Sign In)
 // ==========================================
 
@@ -111,10 +168,10 @@ function setupAuthHandlers() {
   const signupForm = document.getElementById('signupForm');
   const loginForm = document.getElementById('loginForm');
 
-  // Handle Sign Up Form
+  // Handle Sign Up
   if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Prevents page reload
+      e.preventDefault();
 
       const username = document.getElementById('signupUsername')?.value;
       const email = document.getElementById('signupEmail')?.value;
@@ -130,24 +187,24 @@ function setupAuthHandlers() {
         const data = await response.json();
 
         if (!response.ok) {
-          alert(data.error || 'Signup failed.');
+          showToast(data.error || 'Signup failed.', 'error');
           return;
         }
 
-        alert(data.message || 'Account created successfully!');
-        if (typeof closeAuthModal === 'function') closeAuthModal();
-        if (typeof switchTab === 'function') switchTab('login');
+        showToast(data.message || 'Account created successfully!', 'success');
+        signupForm.reset();
+        switchTab('login');
       } catch (err) {
         console.error('Signup error:', err);
-        alert('Network error. Please try again.');
+        showToast('Network error. Please try again.', 'error');
       }
     });
   }
 
-  // Handle Sign In Form
+  // Handle Sign In
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Prevents page reload
+      e.preventDefault();
 
       const username = document.getElementById('loginUsername')?.value;
       const password = document.getElementById('loginPassword')?.value;
@@ -162,19 +219,20 @@ function setupAuthHandlers() {
         const data = await response.json();
 
         if (!response.ok) {
-          alert(data.error || 'Login failed.');
+          showToast(data.error || 'Login failed.', 'error');
           return;
         }
 
-        alert('Logged in successfully!');
+        showToast('Logged in successfully!', 'success');
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('authUser', data.username);
 
-        if (typeof closeAuthModal === 'function') closeAuthModal();
+        loginForm.reset();
+        closeAuthModal();
         checkLoginStatus();
       } catch (err) {
         console.error('Login error:', err);
-        alert('Network error. Please try again.');
+        showToast('Network error. Please try again.', 'error');
       }
     });
   }
@@ -182,28 +240,29 @@ function setupAuthHandlers() {
   checkLoginStatus();
 }
 
-// Update Nav UI when user is logged in
+// Update Nav UI when logged in
 function checkLoginStatus() {
   const user = localStorage.getItem('authUser');
   const authStatus = document.getElementById('authStatus');
 
   if (user && authStatus) {
     authStatus.innerHTML = `
-      <span class="user-greeting" style="color: white; margin-right: 12px; font-weight: 500;">Welcome, <strong>${user}</strong></span>
+      <span class="user-greeting">Welcome, <strong>${user}</strong></span>
       <button class="btn-glass" onclick="logout()">Logout</button>
       <a href="collection.html" class="btn-glass">Collection</a>
     `;
   }
 }
 
-// Logout helper function
+// Logout
 function logout() {
   localStorage.removeItem('authToken');
   localStorage.removeItem('authUser');
-  location.reload();
+  showToast('Logged out successfully', 'info');
+  setTimeout(() => location.reload(), 1000);
 }
 
-// Initialize on page load
+// Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   setupAuthHandlers();
