@@ -19,11 +19,14 @@ export function initBackground(containerId = 'canvas-container') {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const COUNT = 45000;
+  // Clear existing canvas elements to prevent duplicate webgl contexts on re-initialization
+  container.innerHTML = '';
+
+  const COUNT = 40000; // Slightly optimized count for better frame stability
   const SPEED_MULT = 0.35;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x000000, 0.008);
+  scene.fog = new THREE.FogExp2(0x05050d, 0.008);
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
   camera.position.set(0, 0, 100);
@@ -33,26 +36,24 @@ export function initBackground(containerId = 'canvas-container') {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   container.appendChild(renderer.domElement);
 
+  // Post-Processing Composer setup
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    1.5,
-    0.4,
-    0.85
+    1.6, // Bloom intensity
+    0.4, // Radius
+    0.1  // Threshold
   );
-  bloomPass.strength = 1.8;
-  bloomPass.radius = 0.4;
-  bloomPass.threshold = 0.05;
   composer.addPass(bloomPass);
 
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   const target = new THREE.Vector3();
 
-  const geometry = new THREE.ConeGeometry(0.1, 0.5, 4).rotateX(Math.PI / 2);
-  const material = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+  const geometry = new THREE.ConeGeometry(0.12, 0.5, 4).rotateX(Math.PI / 2);
+  const material = new THREE.MeshBasicMaterial();
 
   const instancedMesh = new THREE.InstancedMesh(geometry, material, COUNT);
   instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -61,7 +62,8 @@ export function initBackground(containerId = 'canvas-container') {
   const positions = [];
   for (let i = 0; i < COUNT; i++) {
     positions.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
-    instancedMesh.setColorAt(i, color.setHex(0x00ff88));
+    // Initial color seed: Neon green
+    instancedMesh.setColorAt(i, color.setHex(0x00e704));
   }
 
   const mouse = new THREE.Vector2(0, 0);
@@ -111,11 +113,14 @@ export function initBackground(containerId = 'canvas-container') {
 
       target.set(gx, gy, gz);
 
-      const hue = (0.6 + 0.4 * Math.sin(theta * 0.5 + phi * 0.3 + time * 0.05)) % 1.0;
-      const lightness = 0.4 + 0.4 * (0.5 + 0.5 * Math.sin(time * 0.2 + i * 0.0005));
-      color.setHSL(hue, 0.85, Math.min(1, Math.max(0.2, lightness)));
+      // Color mapping shifted between Green (0.33) and Cyan/Blue (0.52)
+      const colorProgress = 0.5 + 0.5 * Math.sin(theta * 0.5 + phi * 0.3 + time * 0.2);
+      const hue = THREE.MathUtils.lerp(0.33, 0.52, colorProgress); 
+      const lightness = 0.4 + 0.35 * Math.sin(time * 0.3 + i * 0.0005);
+      
+      color.setHSL(hue, 0.9, Math.min(0.85, Math.max(0.3, lightness)));
 
-      positions[i].lerp(target, 0.1);
+      positions[i].lerp(target, 0.08);
       dummy.position.copy(positions[i]);
       dummy.updateMatrix();
       instancedMesh.setMatrixAt(i, dummy.matrix);
